@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: echolet-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: echolet
+      POSTGRES_PASSWORD: echolet_password
+      POSTGRES_DB: echolet
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U echolet -d echolet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - echolet-net
+
+  mock-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock
+    container_name: echolet-mock-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - DATABASE_URL=sqlite+aiosqlite:///./mock_notifications.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - echolet-net
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: echolet-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://echolet:echolet_password@postgres:5432/echolet
+      - SYNC_DATABASE_URL=postgresql://echolet:echolet_password@postgres:5432/echolet
+      - MOCK_NOTIFICATION_URL=http://mock-service:8001/api/v1/notify
+      - MOCK_NOTIFICATION_SERVICE_BASE=http://mock-service:8001
+      - ENVIRONMENT=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mock-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - echolet-net
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: echolet-worker
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+psycopg://echolet:echolet_password@postgres:5432/echolet
+      - MOCK_NOTIFICATION_URL=http://mock-service:8001/api/v1/notify
+      - WORKER_ID=echolet-worker-docker-1
+      - WORKER_POLL_INTERVAL=1.0
+      - WORKER_LEASE_SECONDS=30
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+      mock-service:
+        condition: service_started
+    networks:
+      - echolet-net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: echolet-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_MOCK_SERVICE_URL=http://localhost:8001
+    depends_on:
+      - backend
+    networks:
+      - echolet-net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  echolet-net:
+    driver: bridge
