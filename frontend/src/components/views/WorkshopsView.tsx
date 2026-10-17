@@ -20,9 +20,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Mail,
-  UserCheck,
   Ban,
+  UserPlus,
 } from 'lucide-react';
 
 interface WorkshopsViewProps {
@@ -74,7 +73,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !schedule || capacity <= 0) {
-      showMessage('Please provide workshop title, schedule, and valid capacity.', true);
+      showMessage('Please provide a workshop title, schedule, and valid capacity.', true);
       return;
     }
     setIsSubmittingCreate(true);
@@ -113,13 +112,12 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
         member_name: memberName.trim(),
         member_email: memberEmail.trim(),
       });
-      showMessage(`Registration successful! Outbox confirmation queued: ${res.notification_id?.slice(0, 8)}...`);
+      showMessage(`Registration successful! Outbox notification queued: ${res.notification_id?.slice(0, 8)}...`);
       setShowRegisterModal(false);
       setMemberId('');
       setMemberName('');
       setMemberEmail('');
       onRefresh();
-      // If detail view open for this workshop, refresh attendees
       if (detailWorkshop?.id === selectedWorkshop.id) {
         loadAttendees(selectedWorkshop.id);
       }
@@ -133,7 +131,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
   const handleCancelWorkshop = async (workshop: Workshop) => {
     if (
       !confirm(
-        `Are you sure you want to cancel '${workshop.title}'? This will transactionally fan out cancellation notifications to all registered members.`
+        `Are you sure you want to cancel "${workshop.title}"? This will transactionally fan out cancellation notifications to all registered members.`
       )
     ) {
       return;
@@ -178,75 +176,77 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header and Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-border">
+    <div className="space-y-6">
+      {/* Page Header: Google-style title, description, and prominent Blue action */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
             Workshops
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage scheduled workshops, enforce race-condition-safe capacity, and track member attendance.
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Schedule workshops, enforce atomic capacity limits under concurrency, and track registrations.
           </p>
         </div>
         <div>
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-md text-xs font-semibold bg-foreground text-background hover:opacity-90 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2"
+            className="inline-flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-xs hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>New Workshop</span>
           </button>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border border-border rounded-lg p-2.5 bg-card">
+      {/* Filter Chips & Search Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card border border-border rounded-lg p-3 shadow-xs">
+        {/* Google-style Filter Chips */}
         <div className="flex items-center space-x-1.5">
           {(['ALL', 'SCHEDULED', 'CANCELLED'] as const).map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`text-xs px-3 py-1 rounded-md font-mono transition-colors ${
+              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 statusFilter === st
-                  ? 'bg-foreground text-background font-medium'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary-surface text-primary border-primary-surface-border font-semibold shadow-2xs'
+                  : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
-              {st}
+              {st === 'ALL' ? 'All Workshops' : st === 'SCHEDULED' ? 'Scheduled' : 'Cancelled'}
             </button>
           ))}
         </div>
 
+        {/* Functional Search Input */}
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search workshops..."
+            placeholder="Search workshops by title..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:w-64 bg-background border border-border rounded-md pl-8 pr-3 py-1.5 text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-foreground"
+            className="w-full sm:w-72 bg-background border border-border rounded-md pl-9 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
           />
         </div>
       </div>
 
       {/* Workshop Grid or Empty State */}
       {filteredWorkshops.length === 0 ? (
-        <div className="border border-dashed border-border rounded-lg p-16 text-center bg-card/40">
+        <div className="border border-dashed border-border rounded-lg p-12 text-center bg-card/60">
           <Calendar className="w-10 h-10 mx-auto text-muted-foreground mb-3 opacity-60" />
           <h3 className="text-sm font-semibold text-foreground">No workshops found</h3>
-          <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto leading-relaxed">
             {workshops.length === 0
-              ? 'No workshops have been created yet. Create your first workshop to begin registering members and generating transactional outbox events.'
-              : 'No workshops match the selected filter or search query.'}
+              ? 'No workshops have been scheduled yet. Click "+ New Workshop" to schedule your first event and test reliable outbox notifications.'
+              : 'No workshops match the selected status or search query.'}
           </p>
           {workshops.length === 0 && (
             <button
               onClick={openCreateModal}
-              className="mt-4 inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
+              className="mt-4 inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Create Workshop</span>
+              <span>Create First Workshop</span>
             </button>
           )}
         </div>
@@ -260,26 +260,28 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
             return (
               <div
                 key={w.id}
-                className="border border-border rounded-lg p-5 bg-card flex flex-col justify-between hover:border-foreground/40 transition-all duration-150 group"
+                className="bg-card border border-border rounded-lg p-5 flex flex-col justify-between hover:border-primary/40 hover:shadow-xs transition-all duration-150"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-2">
+                  {/* Card Title & Status Badge */}
+                  <div className="flex items-start justify-between gap-2.5">
                     <h3 className="font-semibold text-foreground text-sm tracking-tight line-clamp-1">
                       {w.title}
                     </h3>
                     <span
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full border shrink-0 ${
+                      className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border shrink-0 ${
                         isCancelled
-                          ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                          ? 'bg-status-danger-bg text-status-danger-text border-status-danger-border'
                           : isFull
-                          ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                          : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                          ? 'bg-status-warning-bg text-status-warning-text border-status-warning-border'
+                          : 'bg-status-success-bg text-status-success-text border-status-success-border'
                       }`}
                     >
                       {w.status}
                     </span>
                   </div>
 
+                  {/* Description */}
                   {w.description ? (
                     <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
                       {w.description}
@@ -288,10 +290,11 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                     <p className="text-xs text-muted-foreground/60 italic mt-2">No description provided.</p>
                   )}
 
-                  <div className="mt-4 space-y-2.5 text-xs">
-                    <div className="flex items-center text-muted-foreground">
-                      <Calendar className="w-3.5 h-3.5 mr-2 shrink-0" />
-                      <span className="font-mono text-[11px]">
+                  {/* Schedule & Capacity Metadata */}
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex items-center text-foreground font-medium">
+                      <Calendar className="w-3.5 h-3.5 mr-2 text-muted-foreground shrink-0" />
+                      <span>
                         {new Date(w.schedule).toLocaleString(undefined, {
                           month: 'short',
                           day: 'numeric',
@@ -302,25 +305,25 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-muted-foreground">
-                      <div className="flex items-center">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center text-muted-foreground">
                         <Users className="w-3.5 h-3.5 mr-2 shrink-0" />
-                        <span>Capacity</span>
+                        <span>Attendance</span>
                       </div>
-                      <span className="font-mono text-[11px] text-foreground font-medium">
+                      <span className="font-medium text-foreground">
                         {w.registered_count} / {w.capacity} seats ({w.available_capacity} free)
                       </span>
                     </div>
 
-                    {/* Capacity Visual Meter */}
-                    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                    {/* Google-style Capacity Progress Meter */}
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-1">
                       <div
                         className={`h-full transition-all duration-300 ${
                           isCancelled
                             ? 'bg-muted-foreground/40'
                             : isFull
                             ? 'bg-amber-500'
-                            : 'bg-foreground'
+                            : 'bg-primary'
                         }`}
                         style={{ width: `${fillPct}%` }}
                       />
@@ -328,8 +331,8 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                   </div>
                 </div>
 
-                {/* Card Actions */}
-                <div className="mt-5 pt-3.5 border-t border-border flex items-center justify-between gap-2">
+                {/* Card Action Buttons */}
+                <div className="mt-5 pt-3.5 border-t border-border-subtle flex items-center justify-between gap-2">
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => {
@@ -337,15 +340,15 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                         setShowRegisterModal(true);
                       }}
                       disabled={isCancelled || isFull}
-                      className="inline-flex items-center space-x-1 text-xs font-medium px-2.5 py-1 rounded border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-md border border-primary text-primary hover:bg-primary-surface disabled:opacity-40 disabled:cursor-not-allowed disabled:border-border disabled:text-muted-foreground transition-colors"
                     >
+                      <UserPlus className="w-3.5 h-3.5" />
                       <span>Register</span>
-                      <ArrowRight className="w-3 h-3" />
                     </button>
 
                     <button
                       onClick={() => openDetailView(w)}
-                      className="inline-flex items-center space-x-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 transition-colors"
+                      className="inline-flex items-center space-x-1 text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-muted transition-colors"
                     >
                       <Info className="w-3.5 h-3.5" />
                       <span>Details</span>
@@ -355,7 +358,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                   {!isCancelled && (
                     <button
                       onClick={() => handleCancelWorkshop(w)}
-                      className="text-xs text-muted-foreground hover:text-rose-500 transition-colors"
+                      className="text-xs font-medium text-status-danger-text hover:underline transition-colors px-1"
                       title="Cancel workshop and notify members"
                     >
                       Cancel
@@ -370,29 +373,30 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
 
       {/* Workshop Detail Slide-over / Modal */}
       {detailWorkshop && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg max-w-xl w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg max-w-lg w-full p-6 shadow-lg animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
             <div className="flex items-start justify-between pb-3 border-b border-border">
               <div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2.5">
                   <h3 className="text-base font-semibold text-foreground tracking-tight">
                     {detailWorkshop.title}
                   </h3>
                   <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${
                       detailWorkshop.status === 'CANCELLED'
-                        ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                        : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                        ? 'bg-status-danger-bg text-status-danger-text border-status-danger-border'
+                        : 'bg-status-success-bg text-status-success-text border-status-success-border'
                     }`}
                   >
                     {detailWorkshop.status}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Workshop ID: {detailWorkshop.id}</p>
+                <p className="text-xs text-muted-foreground font-mono mt-1">ID: {detailWorkshop.id}</p>
               </div>
               <button
                 onClick={() => setDetailWorkshop(null)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md"
+                aria-label="Close dialog"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -401,21 +405,21 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
             <div className="py-4 space-y-4 overflow-y-auto flex-1 text-xs">
               {detailWorkshop.description && (
                 <div>
-                  <span className="text-muted-foreground block text-[11px] font-mono">Description</span>
-                  <p className="text-foreground mt-1">{detailWorkshop.description}</p>
+                  <span className="text-muted-foreground block text-xs font-medium">Description</span>
+                  <p className="text-foreground mt-1 leading-relaxed">{detailWorkshop.description}</p>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3 p-3 rounded border border-border bg-background font-mono text-[11px]">
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border border-border bg-muted/40">
                 <div>
-                  <span className="text-muted-foreground block">Schedule (UTC)</span>
-                  <span className="text-foreground font-semibold mt-0.5 block">
+                  <span className="text-muted-foreground block text-[11px] font-medium">Schedule (UTC)</span>
+                  <span className="text-foreground font-semibold mt-0.5 block text-xs">
                     {new Date(detailWorkshop.schedule).toLocaleString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block">Capacity</span>
-                  <span className="text-foreground font-semibold mt-0.5 block">
+                  <span className="text-muted-foreground block text-[11px] font-medium">Capacity</span>
+                  <span className="text-foreground font-semibold mt-0.5 block text-xs">
                     {detailWorkshop.registered_count} / {detailWorkshop.capacity} seats ({detailWorkshop.available_capacity} free)
                   </span>
                 </div>
@@ -425,34 +429,34 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-foreground text-xs">Registered Attendees</span>
-                  <span className="font-mono text-muted-foreground text-[11px]">
-                    {detailAttendees.length} member{detailAttendees.length === 1 ? '' : 's'}
+                  <span className="text-muted-foreground text-xs font-medium">
+                    {detailAttendees.length} confirmed
                   </span>
                 </div>
 
                 {isLoadingAttendees ? (
-                  <div className="p-6 text-center text-muted-foreground font-mono text-xs">
+                  <div className="p-6 text-center text-muted-foreground text-xs">
                     Loading attendee roster...
                   </div>
                 ) : detailAttendees.length === 0 ? (
-                  <div className="p-4 rounded border border-dashed border-border text-center text-muted-foreground text-xs">
+                  <div className="p-4 rounded-lg border border-dashed border-border text-center text-muted-foreground text-xs">
                     No attendees registered yet for this workshop.
                   </div>
                 ) : (
-                  <div className="border border-border rounded-md overflow-hidden">
+                  <div className="border border-border rounded-lg overflow-hidden">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-muted/40 border-b border-border text-muted-foreground font-mono text-[11px]">
+                      <thead className="bg-muted/60 border-b border-border text-muted-foreground font-medium text-[11px]">
                         <tr>
                           <th className="py-2 px-3">Member</th>
                           <th className="py-2 px-3">Email</th>
                           <th className="py-2 px-3">Registered At</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border font-mono text-[11px]">
+                      <tbody className="divide-y divide-border">
                         {detailAttendees.map((att) => (
-                          <tr key={att.id} className="hover:bg-muted/20">
+                          <tr key={att.id} className="hover:bg-muted/30">
                             <td className="py-2 px-3 text-foreground font-medium">{att.member_name}</td>
-                            <td className="py-2 px-3 text-muted-foreground">{att.member_email}</td>
+                            <td className="py-2 px-3 text-muted-foreground font-mono text-[11px]">{att.member_email}</td>
                             <td className="py-2 px-3 text-muted-foreground">
                               {new Date(att.registered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </td>
@@ -471,7 +475,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                 {detailWorkshop.status !== 'CANCELLED' && (
                   <button
                     onClick={() => handleCancelWorkshop(detailWorkshop)}
-                    className="text-xs text-rose-500 hover:text-rose-600 transition-colors font-medium flex items-center space-x-1"
+                    className="text-xs text-status-danger-text hover:underline font-medium flex items-center space-x-1"
                   >
                     <Ban className="w-3.5 h-3.5" />
                     <span>Cancel Workshop</span>
@@ -482,7 +486,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setDetailWorkshop(null)}
-                  className="px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground"
+                  className="px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   Close
                 </button>
@@ -492,7 +496,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                       setSelectedWorkshop(detailWorkshop);
                       setShowRegisterModal(true);
                     }}
-                    className="px-3.5 py-1.5 rounded-md text-xs font-medium bg-foreground text-background hover:opacity-90"
+                    className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs"
                   >
                     Register Member
                   </button>
@@ -503,60 +507,61 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
         </div>
       )}
 
-      {/* Create Workshop Modal */}
+      {/* Google-style New Workshop Dialog */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg max-w-md w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg max-w-md w-full p-6 shadow-lg animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-base font-semibold text-foreground">Create Workshop</h3>
+              <h3 className="text-base font-semibold text-foreground">New Workshop</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md"
+                aria-label="Close dialog"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Define the workshop schedule and enforce atomic registration limits.
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              Define the workshop title, scheduled time, and maximum seating capacity.
             </p>
 
             <form onSubmit={handleCreate} className="mt-4 space-y-3.5 text-xs">
               <div>
-                <label className="block text-muted-foreground mb-1 font-medium">Workshop Title *</label>
+                <label className="block text-foreground mb-1 font-medium">Workshop Title *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Transactional Outbox Deep Dive"
+                  placeholder="e.g. Distributed Consensus & Raft Architecture"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-muted-foreground mb-1 font-medium">Description</label>
+                <label className="block text-foreground mb-1 font-medium">Description</label>
                 <textarea
                   rows={2}
-                  placeholder="Curriculum overview and objectives..."
+                  placeholder="Overview of topics and learning objectives..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-muted-foreground mb-1 font-medium">Schedule (Future UTC) *</label>
+                  <label className="block text-foreground mb-1 font-medium">Schedule (Future UTC) *</label>
                   <input
                     type="datetime-local"
                     required
                     value={schedule}
                     onChange={(e) => setSchedule(e.target.value)}
-                    className="w-full bg-background border border-border rounded-md px-2.5 py-2 text-foreground font-mono text-[11px] focus:outline-none focus:ring-1 focus:ring-foreground"
+                    className="w-full bg-background border border-border rounded-md px-2.5 py-2 text-foreground font-mono text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-muted-foreground mb-1 font-medium">Capacity (Max Seats) *</label>
+                  <label className="block text-foreground mb-1 font-medium">Capacity (Max Seats) *</label>
                   <input
                     type="number"
                     min="1"
@@ -564,7 +569,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                     required
                     value={capacity}
                     onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
-                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-foreground"
+                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground font-mono text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                   />
                 </div>
               </div>
@@ -573,16 +578,16 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground"
+                  className="px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingCreate}
-                  className="px-4 py-1.5 rounded-md text-xs font-semibold bg-foreground text-background hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs disabled:opacity-50 transition-colors"
                 >
-                  {isSubmittingCreate ? 'Creating...' : 'Create Workshop'}
+                  {isSubmittingCreate ? 'Saving...' : 'Save Workshop'}
                 </button>
               </div>
             </form>
@@ -592,13 +597,14 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
 
       {/* Register Member Modal */}
       {showRegisterModal && selectedWorkshop && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg max-w-md w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg max-w-md w-full p-6 shadow-lg animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <h3 className="text-base font-semibold text-foreground">Register Member</h3>
               <button
                 onClick={() => setShowRegisterModal(false)}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md"
+                aria-label="Close dialog"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -609,57 +615,57 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
 
             <form onSubmit={handleRegister} className="mt-4 space-y-3.5 text-xs">
               <div>
-                <label className="block text-muted-foreground mb-1 font-medium">Member ID *</label>
+                <label className="block text-foreground mb-1 font-medium">Member ID *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g., mem-501"
+                  placeholder="e.g. mem-701"
                   value={memberId}
                   onChange={(e) => setMemberId(e.target.value)}
-                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground font-mono text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-muted-foreground mb-1 font-medium">Full Name *</label>
+                <label className="block text-foreground mb-1 font-medium">Full Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Sarah Chen"
+                  placeholder="e.g. David Miller"
                   value={memberName}
                   onChange={(e) => setMemberName(e.target.value)}
-                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-muted-foreground mb-1 font-medium">Email Address *</label>
+                <label className="block text-foreground mb-1 font-medium">Email Address *</label>
                 <input
                   type="email"
                   required
-                  placeholder="sarah.chen@example.com"
+                  placeholder="david.miller@example.com"
                   value={memberEmail}
                   onChange={(e) => setMemberEmail(e.target.value)}
-                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-foreground"
+                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-foreground font-mono text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
 
-              <div className="rounded-md bg-muted/40 p-2.5 text-[11px] text-muted-foreground border border-border leading-relaxed">
-                <span className="font-semibold text-foreground">Transactional Guarantees:</span> Member registration and the pending outbox notification commit within the same ACID database transaction.
+              <div className="rounded-lg bg-primary-surface p-3 text-xs text-primary border border-primary-surface-border leading-relaxed">
+                <span className="font-semibold">Transactional Outbox:</span> Member registration and confirmation notification commit within the same atomic database transaction.
               </div>
 
               <div className="mt-5 pt-3 border-t border-border flex items-center justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => setShowRegisterModal(false)}
-                  className="px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground"
+                  className="px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingRegister}
-                  className="px-4 py-1.5 rounded-md text-xs font-semibold bg-foreground text-background hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs disabled:opacity-50 transition-colors"
                 >
                   {isSubmittingRegister ? 'Registering...' : 'Confirm Registration'}
                 </button>

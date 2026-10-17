@@ -17,8 +17,6 @@ import {
   Plus,
   Trash2,
   Cpu,
-  Layers,
-  ArrowRight,
 } from 'lucide-react';
 
 interface SimulatorViewProps {
@@ -33,7 +31,6 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
   showMessage,
 }) => {
   const [failEmail, setFailEmail] = useState('');
-  const [delaySec, setDelaySec] = useState<number>(3);
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleModeChange = async (mode: string, extra: any = {}) => {
@@ -43,7 +40,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
         mode,
         ...extra,
       });
-      showMessage(`Simulator mode set to: ${mode.toUpperCase()}`);
+      showMessage(`Simulator mode updated to: ${mode.toUpperCase()}`);
       onRefresh();
     } catch (err: any) {
       showMessage(err.message, true);
@@ -77,7 +74,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
         mode: simulator?.mode || 'normal',
         fail_recipients: updatedList,
       });
-      showMessage(`Added '${failEmail.trim()}' to targeted failure recipient list.`);
+      showMessage(`Added "${failEmail.trim()}" to targeted failure list.`);
       setFailEmail('');
       onRefresh();
     } catch (err: any) {
@@ -96,7 +93,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
         mode: simulator?.mode || 'normal',
         fail_recipients: updatedList,
       });
-      showMessage(`Removed '${emailToRemove}' from targeted failure list.`);
+      showMessage(`Removed "${emailToRemove}" from targeted failure list.`);
       onRefresh();
     } catch (err: any) {
       showMessage(err.message, true);
@@ -106,22 +103,22 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
+    <div className="space-y-6">
       {/* View Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Mock Notification Service &amp; Failure Simulator
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+            Failure Simulator &amp; Mock Service
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Simulate real HTTP 500 outages, gateway timeouts, and network flakiness to verify Outbox worker resilience.
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Configure real downstream network faults on port 8001 to verify Outbox retry and recovery.
           </p>
         </div>
         <div>
           <button
             onClick={handleReset}
             disabled={isUpdating}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-md text-xs font-medium border border-border bg-card hover:bg-muted text-foreground transition-colors disabled:opacity-50"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset to Normal</span>
@@ -129,42 +126,42 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
         </div>
       </div>
 
-      {/* Live Service Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
-        <div className="border border-border rounded-lg p-4 bg-card">
-          <span className="text-[11px] text-muted-foreground block">HTTP Requests Received</span>
-          <span className="text-2xl font-semibold text-foreground mt-1.5 block">
+      {/* Live Mock Metrics */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-xs">
+          <span className="text-xs text-muted-foreground font-medium block">HTTP Requests Received</span>
+          <span className="text-2xl font-semibold text-foreground mt-1 block">
             {simulator?.total_received ?? 0}
           </span>
         </div>
-        <div className="border border-border rounded-lg p-4 bg-card">
-          <span className="text-[11px] text-muted-foreground block">Deliveries Recorded (200 OK)</span>
-          <span className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5 block">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-xs">
+          <span className="text-xs text-muted-foreground font-medium block">Deliveries Recorded (200 OK)</span>
+          <span className="text-2xl font-semibold text-status-success-text mt-1 block">
             {simulator?.total_delivered ?? 0}
           </span>
         </div>
-        <div className="border border-border rounded-lg p-4 bg-card">
-          <span className="text-[11px] text-muted-foreground block">Faults Injected (500/Timeout)</span>
-          <span className="text-2xl font-semibold text-rose-500 mt-1.5 block">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-xs">
+          <span className="text-xs text-muted-foreground font-medium block">Faults Injected (500/Timeout)</span>
+          <span className="text-2xl font-semibold text-status-danger-text mt-1 block">
             {simulator?.total_failed ?? 0}
           </span>
         </div>
-        <div className="border border-border rounded-lg p-4 bg-card">
-          <span className="text-[11px] text-muted-foreground block">Idempotently Deduplicated</span>
-          <span className="text-2xl font-semibold text-sky-500 mt-1.5 block">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-xs">
+          <span className="text-xs text-muted-foreground font-medium block">Idempotently Deduplicated</span>
+          <span className="text-2xl font-semibold text-status-info-text mt-1 block">
             {simulator?.total_deduplicated ?? 0}
           </span>
         </div>
       </div>
 
-      {/* Simulator Modes Grid */}
-      <div className="space-y-4">
+      {/* Simulation Mode Cards */}
+      <div className="space-y-3">
         <div>
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">
-            Failure Injection Modes
+          <h2 className="text-sm font-semibold text-foreground">
+            Failure Simulation Modes
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Select a mode to alter downstream behavior on port 8001 in real time.
+            Select a mode to alter downstream notification service responses in real time.
           </p>
         </div>
 
@@ -174,23 +171,23 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
             onClick={() => handleModeChange('normal')}
             className={`p-4 rounded-lg border text-left cursor-pointer transition-all ${
               simulator?.mode === 'normal'
-                ? 'border-emerald-500 bg-emerald-500/5 ring-1 ring-emerald-500/30'
-                : 'border-border bg-card hover:border-foreground/30'
+                ? 'border-primary bg-primary-surface ring-1 ring-primary/40 shadow-xs'
+                : 'border-border bg-card hover:border-primary/40 hover:shadow-2xs'
             }`}
           >
             <div className="flex items-center justify-between">
               <span className="font-semibold text-xs text-foreground">Normal Operation</span>
               <CheckCircle2
                 className={`w-4 h-4 ${
-                  simulator?.mode === 'normal' ? 'text-emerald-500' : 'text-muted-foreground/40'
+                  simulator?.mode === 'normal' ? 'text-primary' : 'text-muted-foreground/40'
                 }`}
               />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-              Returns HTTP 200 OK immediately and durably records deliveries in the mock store.
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              Returns HTTP 200 OK immediately and durably records delivery in mock persistence.
             </p>
-            <div className="mt-4 pt-2 border-t border-border/50 text-[10px] font-mono text-muted-foreground">
-              Worker: transitions event to DELIVERED
+            <div className="mt-3 pt-2 border-t border-border-subtle text-[11px] text-muted-foreground font-medium">
+              Worker marks DELIVERED
             </div>
           </div>
 
@@ -199,23 +196,23 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
             onClick={() => handleModeChange('fail_500')}
             className={`p-4 rounded-lg border text-left cursor-pointer transition-all ${
               simulator?.mode === 'fail_500'
-                ? 'border-rose-500 bg-rose-500/5 ring-1 ring-rose-500/30'
-                : 'border-border bg-card hover:border-foreground/30'
+                ? 'border-red-500 bg-status-danger-bg ring-1 ring-red-500/40 shadow-xs'
+                : 'border-border bg-card hover:border-red-400 hover:shadow-2xs'
             }`}
           >
             <div className="flex items-center justify-between">
               <span className="font-semibold text-xs text-foreground">HTTP 500 Server Outage</span>
               <ShieldAlert
                 className={`w-4 h-4 ${
-                  simulator?.mode === 'fail_500' ? 'text-rose-500' : 'text-muted-foreground/40'
+                  simulator?.mode === 'fail_500' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground/40'
                 }`}
               />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-              Returns HTTP 500 Internal Server Error for every incoming delivery request.
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              Returns HTTP 500 Internal Server Error for incoming notification requests.
             </p>
-            <div className="mt-4 pt-2 border-t border-border/50 text-[10px] font-mono text-muted-foreground">
-              Worker: logs error, sets RETRYING with exponential backoff
+            <div className="mt-3 pt-2 border-t border-border-subtle text-[11px] text-muted-foreground font-medium">
+              Worker: backoff retry
             </div>
           </div>
 
@@ -224,23 +221,23 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
             onClick={() => handleModeChange('timeout', { delay_seconds: 6.0 })}
             className={`p-4 rounded-lg border text-left cursor-pointer transition-all ${
               simulator?.mode === 'timeout'
-                ? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500/30'
-                : 'border-border bg-card hover:border-foreground/30'
+                ? 'border-amber-500 bg-status-warning-bg ring-1 ring-amber-500/40 shadow-xs'
+                : 'border-border bg-card hover:border-amber-400 hover:shadow-2xs'
             }`}
           >
             <div className="flex items-center justify-between">
               <span className="font-semibold text-xs text-foreground">Gateway Timeout</span>
               <Clock
                 className={`w-4 h-4 ${
-                  simulator?.mode === 'timeout' ? 'text-amber-500' : 'text-muted-foreground/40'
+                  simulator?.mode === 'timeout' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground/40'
                 }`}
               />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
               Injects artificial delay exceeding HTTP client timeout (6s vs 5s limit).
             </p>
-            <div className="mt-4 pt-2 border-t border-border/50 text-[10px] font-mono text-muted-foreground">
-              Worker: catches httpx.TimeoutException, schedules retry
+            <div className="mt-3 pt-2 border-t border-border-subtle text-[11px] text-muted-foreground font-medium">
+              Worker: timeout catch &amp; retry
             </div>
           </div>
 
@@ -249,36 +246,36 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
             onClick={() => handleModeChange('flaky', { failure_rate: 0.5 })}
             className={`p-4 rounded-lg border text-left cursor-pointer transition-all ${
               simulator?.mode === 'flaky'
-                ? 'border-purple-500 bg-purple-500/5 ring-1 ring-purple-500/30'
-                : 'border-border bg-card hover:border-foreground/30'
+                ? 'border-purple-500 bg-purple-500/10 ring-1 ring-purple-500/40 shadow-xs'
+                : 'border-border bg-card hover:border-purple-400 hover:shadow-2xs'
             }`}
           >
             <div className="flex items-center justify-between">
               <span className="font-semibold text-xs text-foreground">Flaky Network (50%)</span>
               <Bug
                 className={`w-4 h-4 ${
-                  simulator?.mode === 'flaky' ? 'text-purple-500' : 'text-muted-foreground/40'
+                  simulator?.mode === 'flaky' ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/40'
                 }`}
               />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
               Randomly drops 50% of requests with simulated network disconnects.
             </p>
-            <div className="mt-4 pt-2 border-t border-border/50 text-[10px] font-mono text-muted-foreground">
-              Worker: retries until success, receiver deduplicates
+            <div className="mt-3 pt-2 border-t border-border-subtle text-[11px] text-muted-foreground font-medium">
+              Receiver deduplicates
             </div>
           </div>
         </div>
       </div>
 
-      {/* Targeted Failure Injection by Recipient */}
-      <div className="border border-border rounded-lg p-6 bg-card space-y-4">
+      {/* Targeted Failure Injection */}
+      <div className="bg-card border border-border rounded-lg p-5 shadow-xs space-y-3.5">
         <div>
-          <h3 className="text-sm font-semibold tracking-tight text-foreground">
-            Targeted Failure Injection by Recipient
+          <h3 className="text-sm font-semibold text-foreground">
+            Targeted Failure by Recipient Email
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Force HTTP 500 failure exclusively for specific email addresses while allowing other deliveries to succeed.
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+            Force downstream HTTP 500 failure exclusively for specific emails while letting other deliveries succeed.
           </p>
         </div>
 
@@ -289,32 +286,32 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
             placeholder="e.g. failing.member@example.com"
             value={failEmail}
             onChange={(e) => setFailEmail(e.target.value)}
-            className="flex-1 bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-foreground"
+            className="flex-1 bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
           />
           <button
             type="submit"
             disabled={isUpdating}
-            className="px-3.5 py-1.5 rounded-md text-xs font-medium bg-foreground text-background hover:opacity-90 disabled:opacity-50 transition-opacity whitespace-nowrap"
+            className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs disabled:opacity-50 transition-colors whitespace-nowrap"
           >
-            Add Targeted Recipient
+            Add Recipient
           </button>
         </form>
 
         {simulator?.fail_recipients && simulator.fail_recipients.length > 0 ? (
-          <div className="space-y-2 pt-2">
-            <span className="text-[11px] font-mono text-muted-foreground block">
-              Currently failing recipients:
+          <div className="space-y-2 pt-1">
+            <span className="text-xs text-muted-foreground font-medium block">
+              Configured failing recipients:
             </span>
             <div className="flex flex-wrap gap-2">
               {simulator.fail_recipients.map((email) => (
                 <span
                   key={email}
-                  className="inline-flex items-center space-x-1.5 text-xs font-mono px-2.5 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-500"
+                  className="inline-flex items-center space-x-1.5 text-xs font-mono px-2.5 py-1 rounded-md border border-status-danger-border bg-status-danger-bg text-status-danger-text"
                 >
                   <span>{email}</span>
                   <button
                     onClick={() => handleRemoveFailingRecipient(email)}
-                    className="hover:text-rose-700 ml-1 p-0.5"
+                    className="hover:text-red-800 ml-1 font-bold p-0.5"
                     title="Remove recipient"
                   >
                     &times;
@@ -324,26 +321,26 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground font-mono">
+          <p className="text-xs text-muted-foreground font-medium">
             No specific recipients currently configured for targeted failure.
           </p>
         )}
       </div>
 
-      {/* Explanation of Guaranteed Delivery Guarantees */}
-      <div className="border border-border rounded-lg p-6 bg-card space-y-3 text-xs leading-relaxed">
+      {/* Outbox Resilience Technical Card */}
+      <div className="bg-card border border-border rounded-lg p-5 shadow-xs space-y-2 text-xs leading-relaxed">
         <h3 className="text-sm font-semibold text-foreground">
-          How Outbox Resilience Works During Downstream Outages
+          How Outbox Resilience Protects Registration Integrity
         </h3>
-        <p className="text-muted-foreground">
-          When the notification service fails or times out, the independent background worker leaves the original workshop registration completely unaffected. The worker:
+        <p className="text-muted-foreground leading-relaxed">
+          When the notification service fails or times out, the member registration record remains 100% committed and valid in PostgreSQL. The independent outbox worker:
         </p>
-        <ul className="list-disc list-inside space-y-1.5 text-muted-foreground font-mono text-[11px]">
-          <li>Catches the HTTP failure response without dropping the database event</li>
-          <li>Increments the attempt counter on the outbox record</li>
-          <li>Applies exponential backoff with jitter: <code className="text-foreground">delay = min(max_delay, base * 2^attempt + jitter)</code></li>
-          <li>Releases the row lease so other workers can safely claim it once the backoff window elapses</li>
-          <li>Passes the deterministic idempotency key (<code className="text-foreground">reg_&lt;UUID&gt;</code>) so duplicate deliveries are safely ignored by the receiver</li>
+        <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+          <li>Catches HTTP errors and retains the outbox record in durable storage</li>
+          <li>Increments the attempt counter and logs the exact HTTP error message</li>
+          <li>Schedules the next retry using exponential backoff with randomized jitter</li>
+          <li>Releases the row lease so other worker instances can claim it when the backoff window opens</li>
+          <li>Sends deterministic <code className="text-foreground font-mono">Idempotency-Key</code> so duplicate delivery attempts are deduplicated</li>
         </ul>
       </div>
     </div>

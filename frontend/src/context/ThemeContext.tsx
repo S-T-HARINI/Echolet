@@ -15,9 +15,9 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>('system');
+  const [theme, setThemeState] = useState<ThemeMode>('light');
   const [brightness, setBrightnessState] = useState<number>(1.0);
-  const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('dark');
+  const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -26,6 +26,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
       setThemeState(savedTheme);
+    } else {
+      setThemeState('light');
     }
     if (savedBrightness) {
       const parsed = parseFloat(savedBrightness);

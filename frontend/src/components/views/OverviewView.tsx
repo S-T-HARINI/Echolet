@@ -13,14 +13,14 @@ import {
   AlertTriangle,
   RotateCw,
   Clock,
-  Layers,
+  Calendar,
   Users,
   Server,
   Zap,
   ArrowRight,
   TrendingUp,
   ShieldCheck,
-  Activity,
+  Plus,
 } from 'lucide-react';
 
 interface OverviewViewProps {
@@ -58,202 +58,211 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   const recentNotifications = notifications.slice(0, 5);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Top Banner / Welcome & Quick Action */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-border">
+    <div className="space-y-6">
+      {/* Top Banner: Google-style clean welcome & actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
             System Overview
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Real-time transactional integrity, atomic workshop registrations, and outbox delivery metrics.
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Real-time status of atomic workshop registrations, outbox delivery, and worker dispatch.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => onNavigate('outbox')}
-            className="px-3 py-1.5 rounded-md text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors"
+            className="px-3.5 py-2 rounded-md text-xs font-medium border border-border bg-card hover:bg-muted text-foreground transition-colors"
           >
-            View Outbox ({totalEvents})
+            Outbox Ledger ({totalEvents})
           </button>
           <button
             onClick={onOpenCreateWorkshop}
-            className="px-3.5 py-1.5 rounded-md text-xs font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs transition-colors flex items-center space-x-1.5"
           >
-            + New Workshop
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>New Workshop</span>
           </button>
         </div>
       </div>
 
-      {/* Primary Key Performance Metrics */}
+      {/* Primary Google Material KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Workshops */}
         <div
           onClick={() => onNavigate('workshops')}
-          className="border border-border rounded-lg p-5 bg-card hover:border-foreground/30 transition-all cursor-pointer group"
+          className="bg-card border border-border rounded-lg p-5 shadow-xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Workshops
             </span>
-            <Layers className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <div className="w-7 h-7 rounded-md bg-primary-surface flex items-center justify-center text-primary">
+              <Calendar className="w-4 h-4" />
+            </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-semibold tracking-tight text-foreground font-mono">
+            <span className="text-3xl font-semibold text-foreground tracking-tight">
               {workshops.length}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground font-medium">
               ({activeWorkshops.length} active, {cancelledWorkshops.length} cancelled)
             </span>
           </div>
-          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+          <div className="mt-3 pt-3 border-t border-border-subtle flex items-center justify-between text-xs text-muted-foreground">
             <span>Capacity Utilized</span>
-            <span className="font-mono text-foreground font-medium">{capacityUtilization}%</span>
+            <span className="text-foreground font-semibold">{capacityUtilization}%</span>
           </div>
         </div>
 
-        {/* Total Confirmed Registrations */}
+        {/* Confirmed Registrations */}
         <div
           onClick={() => onNavigate('registrations')}
-          className="border border-border rounded-lg p-5 bg-card hover:border-foreground/30 transition-all cursor-pointer group"
+          className="bg-card border border-border rounded-lg p-5 shadow-xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Registrations
             </span>
-            <Users className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <div className="w-7 h-7 rounded-md bg-status-success-bg flex items-center justify-center text-status-success-text">
+              <Users className="w-4 h-4" />
+            </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-semibold tracking-tight text-foreground font-mono">
+            <span className="text-3xl font-semibold text-foreground tracking-tight">
               {registrations.length}
             </span>
-            <span className="text-xs text-muted-foreground">total members</span>
+            <span className="text-xs text-muted-foreground font-medium">members registered</span>
           </div>
-          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-            <span>Enforcement</span>
-            <span className="font-mono text-emerald-600 dark:text-emerald-400 font-medium">Atomic ACID</span>
+          <div className="mt-3 pt-3 border-t border-border-subtle flex items-center justify-between text-xs text-muted-foreground">
+            <span>Capacity Check</span>
+            <span className="text-status-success-text font-semibold">Atomic DB UPDATE</span>
           </div>
         </div>
 
         {/* Outbox Delivery Success */}
         <div
           onClick={() => onNavigate('outbox')}
-          className="border border-border rounded-lg p-5 bg-card hover:border-foreground/30 transition-all cursor-pointer group"
+          className="bg-card border border-border rounded-lg p-5 shadow-xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Outbox Delivery
             </span>
-            <TrendingUp className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <div className="w-7 h-7 rounded-md bg-status-info-bg flex items-center justify-center text-status-info-text">
+              <TrendingUp className="w-4 h-4" />
+            </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-semibold tracking-tight text-foreground font-mono">
+            <span className="text-3xl font-semibold text-foreground tracking-tight">
               {deliverySuccessRate}%
             </span>
-            <span className="text-xs text-muted-foreground">
-              ({deliveredEvents}/{totalEvents})
+            <span className="text-xs text-muted-foreground font-medium">
+              ({deliveredEvents}/{totalEvents} delivered)
             </span>
           </div>
-          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+          <div className="mt-3 pt-3 border-t border-border-subtle flex items-center justify-between text-xs text-muted-foreground">
             <span>In-flight / Retrying</span>
-            <span className={`font-mono font-medium ${inFlightCount > 0 ? 'text-amber-500' : 'text-foreground'}`}>
+            <span className={`font-semibold ${inFlightCount > 0 ? 'text-status-warning-text' : 'text-foreground'}`}>
               {inFlightCount} event{inFlightCount === 1 ? '' : 's'}
             </span>
           </div>
         </div>
 
-        {/* Mock Notification Service Mode */}
+        {/* Mock Notification Service */}
         <div
           onClick={() => onNavigate('simulator')}
-          className="border border-border rounded-lg p-5 bg-card hover:border-foreground/30 transition-all cursor-pointer group"
+          className="bg-card border border-border rounded-lg p-5 shadow-xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-              Mock Service Status
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Notification Sink
             </span>
-            <Zap className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <div className="w-7 h-7 rounded-md bg-status-warning-bg flex items-center justify-center text-status-warning-text">
+              <Zap className="w-4 h-4" />
+            </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-xl font-semibold tracking-tight text-foreground font-mono uppercase">
-              {simulator?.mode || 'OFFLINE'}
+            <span className="text-xl font-semibold text-foreground uppercase tracking-tight">
+              {simulator?.mode || 'NORMAL'}
             </span>
           </div>
-          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-            <span>Deduplicated</span>
-            <span className="font-mono text-foreground font-medium">
+          <div className="mt-3 pt-3 border-t border-border-subtle flex items-center justify-between text-xs text-muted-foreground">
+            <span>Deduplication</span>
+            <span className="text-foreground font-semibold">
               {simulator?.total_deduplicated ?? 0} idempotent
             </span>
           </div>
         </div>
       </div>
 
-      {/* Component Architecture Live Health Status */}
-      <div className="border border-border rounded-lg p-6 bg-card space-y-4">
+      {/* Architecture Subsystem Status */}
+      <div className="bg-card border border-border rounded-lg p-5 shadow-xs space-y-3.5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold tracking-tight text-foreground">
+            <h2 className="text-sm font-semibold text-foreground">
               Architecture Subsystems
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Live communication verification between decoupled processes.
+              Live status and decoupled process communication.
             </p>
           </div>
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
-            System {systemStatus.toUpperCase()}
+          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full border bg-status-success-bg text-status-success-text border-status-success-border">
+            All Systems {systemStatus.toUpperCase()}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
           {/* FastAPI Core */}
-          <div className="p-3.5 rounded border border-border bg-background flex flex-col justify-between">
+          <div className="p-3.5 rounded-lg border border-border bg-background flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-foreground">FastAPI REST Server</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               </div>
-              <p className="text-muted-foreground text-[11px] mt-1.5 leading-relaxed">
+              <p className="text-muted-foreground text-xs mt-1.5 leading-relaxed">
                 Port 8000. Provides atomic registration and asynchronous workshop endpoints.
               </p>
             </div>
-            <div className="mt-3 pt-2 border-t border-border font-mono text-[10px] text-muted-foreground">
+            <div className="mt-3 pt-2 border-t border-border-subtle font-mono text-[11px] text-muted-foreground">
               Host: 127.0.0.1:8000
             </div>
           </div>
 
-          {/* Database */}
-          <div className="p-3.5 rounded border border-border bg-background flex flex-col justify-between">
+          {/* Relational DB */}
+          <div className="p-3.5 rounded-lg border border-border bg-background flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-foreground">Relational Persistence</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               </div>
-              <p className="text-muted-foreground text-[11px] mt-1.5 leading-relaxed">
-                ACID transactions bundle registration commits and outbox events together.
+              <p className="text-muted-foreground text-xs mt-1.5 leading-relaxed">
+                Single ACID transaction commits registration and outbox event together.
               </p>
             </div>
-            <div className="mt-3 pt-2 border-t border-border font-mono text-[10px] text-muted-foreground">
-              Tables: workshops, registrations, outbox
+            <div className="mt-3 pt-2 border-t border-border-subtle font-mono text-[11px] text-muted-foreground">
+              Dual-write prevention: Active
             </div>
           </div>
 
           {/* Outbox Worker */}
-          <div className="p-3.5 rounded border border-border bg-background flex flex-col justify-between">
+          <div className="p-3.5 rounded-lg border border-border bg-background flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-foreground">Outbox Worker Daemon</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
-              <p className="text-muted-foreground text-[11px] mt-1.5 leading-relaxed">
-                Polls pending outbox events using row leases &amp; exponential backoff.
+              <p className="text-muted-foreground text-xs mt-1.5 leading-relaxed">
+                Polls pending outbox records using lease locks &amp; exponential retry backoff.
               </p>
             </div>
-            <div className="mt-3 pt-2 border-t border-border font-mono text-[10px] text-muted-foreground">
-              Active: Claims {summary?.claimed ?? 0} in-flight
+            <div className="mt-3 pt-2 border-t border-border-subtle font-mono text-[11px] text-muted-foreground">
+              Claims {summary?.claimed ?? 0} in-flight
             </div>
           </div>
 
-          {/* Mock Notification Service */}
-          <div className="p-3.5 rounded border border-border bg-background flex flex-col justify-between">
+          {/* Mock HTTP Sink */}
+          <div className="p-3.5 rounded-lg border border-border bg-background flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-foreground">Mock HTTP Service</span>
@@ -262,89 +271,89 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                     simulator?.mode === 'normal'
                       ? 'bg-emerald-500'
                       : simulator?.mode === 'fail_500'
-                      ? 'bg-rose-500'
+                      ? 'bg-red-500'
                       : 'bg-amber-500'
                   }`}
                 ></span>
               </div>
-              <p className="text-muted-foreground text-[11px] mt-1.5 leading-relaxed">
-                Port 8001. Enforces receiver-side idempotency keys and simulated fault injection.
+              <p className="text-muted-foreground text-xs mt-1.5 leading-relaxed">
+                Port 8001. Enforces receiver idempotency keys and simulated fault injection.
               </p>
             </div>
-            <div className="mt-3 pt-2 border-t border-border font-mono text-[10px] text-muted-foreground">
-              Total deliveries: {simulator?.total_delivered ?? 0}
+            <div className="mt-3 pt-2 border-t border-border-subtle font-mono text-[11px] text-muted-foreground">
+              Recorded deliveries: {simulator?.total_delivered ?? 0}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Two Column Section: Recent Activity & Workshop Snapshot */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Two-Column Snapshot: Recent Activity & Workshop Snapshot */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Outbox Activity */}
-        <div className="border border-border rounded-lg p-5 bg-card flex flex-col justify-between">
+        <div className="bg-card border border-border rounded-lg p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-sm font-semibold tracking-tight text-foreground">
+              <h3 className="text-sm font-semibold text-foreground">
                 Recent Outbox Notifications
               </h3>
               <button
                 onClick={() => onNavigate('outbox')}
-                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 font-mono"
+                className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
               >
                 <span>View all</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-3 space-y-2">
               {recentNotifications.length === 0 ? (
-                <div className="py-8 text-center text-xs text-muted-foreground font-mono">
-                  No notifications recorded yet. Register a member to trigger an event.
+                <div className="py-8 text-center text-xs text-muted-foreground font-medium">
+                  No notifications recorded yet. Register a member to trigger an outbox event.
                 </div>
               ) : (
                 recentNotifications.map((notif) => (
                   <div
                     key={notif.id}
-                    className="flex items-center justify-between p-2.5 rounded border border-border bg-background text-xs"
+                    className="flex items-center justify-between p-2.5 rounded-md border border-border bg-background text-xs"
                   >
                     <div className="space-y-0.5 max-w-[65%]">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-foreground truncate">
                           {notif.recipient_name}
                         </span>
-                        <span className="text-[10px] font-mono text-muted-foreground truncate">
+                        <span className="text-[11px] text-muted-foreground font-mono truncate">
                           ({notif.recipient_email})
                         </span>
                       </div>
-                      <div className="text-[10px] text-muted-foreground font-mono truncate">
+                      <div className="text-[11px] text-muted-foreground">
                         {notif.event_type.replace('WORKSHOP_', '')} &bull; Attempt {notif.attempt_count}
                       </div>
                     </div>
 
                     <div>
                       {notif.status === 'DELIVERED' && (
-                        <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
-                          <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> DELIVERED
+                        <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border bg-status-success-bg text-status-success-text border-status-success-border">
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> DELIVERED
                         </span>
                       )}
                       {notif.status === 'RETRYING' && (
-                        <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-500 border-amber-500/20">
-                          <RotateCw className="w-2.5 h-2.5 mr-1 animate-spin" /> RETRYING
+                        <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border bg-status-warning-bg text-status-warning-text border-status-warning-border">
+                          <RotateCw className="w-3 h-3 mr-1 animate-spin" /> RETRYING
                         </span>
                       )}
                       {notif.status === 'CLAIMED' && (
-                        <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-sky-500/10 text-sky-500 border-sky-500/20">
-                          <Clock className="w-2.5 h-2.5 mr-1" /> CLAIMED
+                        <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border bg-status-info-bg text-status-info-text border-status-info-border">
+                          <Clock className="w-3 h-3 mr-1" /> CLAIMED
                         </span>
                       )}
                       {notif.status === 'PENDING' && (
-                        <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-muted text-muted-foreground border-border">
+                        <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border bg-muted text-muted-foreground border-border">
                           PENDING
                         </span>
                       )}
                       {notif.status === 'FAILED' && (
-                        <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-rose-500/10 text-rose-500 border-rose-500/20">
-                          <AlertTriangle className="w-2.5 h-2.5 mr-1" /> FAILED
+                        <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border bg-status-danger-bg text-status-danger-text border-status-danger-border">
+                          <AlertTriangle className="w-3 h-3 mr-1" /> FAILED
                         </span>
                       )}
                     </div>
@@ -355,25 +364,25 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
         </div>
 
-        {/* Active Workshops Snapshot */}
-        <div className="border border-border rounded-lg p-5 bg-card flex flex-col justify-between">
+        {/* Scheduled Workshops Snapshot */}
+        <div className="bg-card border border-border rounded-lg p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-sm font-semibold tracking-tight text-foreground">
+              <h3 className="text-sm font-semibold text-foreground">
                 Scheduled Workshops
               </h3>
               <button
                 onClick={() => onNavigate('workshops')}
-                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 font-mono"
+                className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
               >
                 <span>Manage</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-3 space-y-2">
               {activeWorkshops.length === 0 ? (
-                <div className="py-8 text-center text-xs text-muted-foreground font-mono">
+                <div className="py-8 text-center text-xs text-muted-foreground font-medium">
                   No active workshops scheduled. Click &quot;+ New Workshop&quot; to begin.
                 </div>
               ) : (
@@ -382,20 +391,20 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   return (
                     <div
                       key={w.id}
-                      className="p-3 rounded border border-border bg-background space-y-2 text-xs"
+                      className="p-2.5 rounded-md border border-border bg-background space-y-1.5 text-xs"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-foreground tracking-tight line-clamp-1">
                           {w.title}
                         </span>
-                        <span className="font-mono text-[11px] text-muted-foreground">
-                          {w.registered_count}/{w.capacity} seats
+                        <span className="text-xs text-muted-foreground font-medium">
+                          {w.registered_count} / {w.capacity} seats
                         </span>
                       </div>
 
                       <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-foreground transition-all duration-300"
+                          className="h-full bg-primary transition-all duration-300"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -406,9 +415,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-            <span>Deterministic Concurrency Check</span>
-            <span className="font-mono text-emerald-600 dark:text-emerald-400 font-medium">Atomic SQL UPDATE</span>
+          <div className="mt-3 pt-3 border-t border-border-subtle flex items-center justify-between text-xs text-muted-foreground">
+            <span>Race Condition Safety</span>
+            <span className="text-status-success-text font-semibold">Atomic DB UPDATE</span>
           </div>
         </div>
       </div>

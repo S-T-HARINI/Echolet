@@ -21,7 +21,7 @@ import {
   fetchSimulatorStatus,
   fetchHealth,
 } from '../lib/api';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<NavigationTab>('overview');
@@ -104,8 +104,8 @@ export default function DashboardPage() {
   const inFlightCount = (summary?.pending ?? 0) + (summary?.claimed ?? 0) + (summary?.retrying ?? 0);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-foreground selection:text-background">
-      {/* Header and Global Navigation */}
+    <div className="min-h-screen flex flex-col bg-background text-foreground antialiased">
+      {/* Google-style Compact Header and Navigation */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -118,30 +118,31 @@ export default function DashboardPage() {
         simulatorMode={simulator?.mode}
       />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Floating Toast Notification */}
+      {/* Main Container with consistent max-width and compact padding */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
+        {/* Google Material Snackbar / Toast */}
         {toast && (
           <div
-            className={`mb-6 p-3 rounded-lg border text-xs flex items-center justify-between shadow-xs animate-in slide-in-from-top-2 duration-150 ${
+            className={`mb-5 p-3.5 rounded-lg border text-sm flex items-center justify-between shadow-xs animate-in slide-in-from-top-1 duration-150 ${
               toast.isError
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
-                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                ? 'bg-status-danger-bg border-status-danger-border text-status-danger-text'
+                : 'bg-status-success-bg border-status-success-border text-status-success-text'
             }`}
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2.5">
               {toast.isError ? (
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-600 dark:text-red-400" />
               ) : (
-                <CheckCircle className="w-4 h-4 shrink-0 text-emerald-500" />
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               )}
-              <span className="font-medium">{toast.message}</span>
+              <span className="font-medium text-xs sm:text-sm">{toast.message}</span>
             </div>
             <button
               onClick={() => setToast(null)}
-              className="text-muted-foreground hover:text-foreground text-sm font-mono ml-4"
+              className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors ml-4"
+              aria-label="Dismiss message"
             >
-              &times;
+              <X className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -201,14 +202,14 @@ export default function DashboardPage() {
         {activeTab === 'architecture' && <ArchitectureView />}
       </main>
 
-      {/* Engineering Footer */}
-      <footer className="border-t border-border py-4 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground font-mono gap-2">
-          <div>
+      {/* Google-style Clean Compact Footer */}
+      <footer className="border-t border-border bg-card/60 py-3 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground gap-2">
+          <div className="font-medium">
             EchoLet &bull; Production Workshop Registration &amp; Transactional Outbox
           </div>
-          <div className="flex items-center space-x-4 text-[11px]">
-            <span>PostgreSQL ACID</span>
+          <div className="flex items-center space-x-3 text-[11px]">
+            <span>ACID Dual-Write Safety</span>
             <span>&bull;</span>
             <span>FOR UPDATE SKIP LOCKED</span>
             <span>&bull;</span>

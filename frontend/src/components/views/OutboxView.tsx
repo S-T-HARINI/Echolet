@@ -42,32 +42,32 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
     switch (status) {
       case 'DELIVERED':
         return (
-          <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
-            <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> DELIVERED
+          <span className="inline-flex items-center text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-status-success-bg text-status-success-text border-status-success-border">
+            <CheckCircle2 className="w-3 h-3 mr-1" /> DELIVERED
           </span>
         );
       case 'RETRYING':
         return (
-          <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-500 border-amber-500/20">
-            <RotateCw className="w-2.5 h-2.5 mr-1 animate-spin" /> RETRYING
+          <span className="inline-flex items-center text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-status-warning-bg text-status-warning-text border-status-warning-border">
+            <RotateCw className="w-3 h-3 mr-1 animate-spin" /> RETRYING
           </span>
         );
       case 'CLAIMED':
         return (
-          <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-sky-500/10 text-sky-500 border-sky-500/20">
-            <Clock className="w-2.5 h-2.5 mr-1" /> CLAIMED
+          <span className="inline-flex items-center text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-status-info-bg text-status-info-text border-status-info-border">
+            <Clock className="w-3 h-3 mr-1" /> CLAIMED
           </span>
         );
       case 'PENDING':
         return (
-          <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-muted text-muted-foreground border-border">
-            <Clock className="w-2.5 h-2.5 mr-1" /> PENDING
+          <span className="inline-flex items-center text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-muted text-muted-foreground border-border">
+            <Clock className="w-3 h-3 mr-1" /> PENDING
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full border bg-rose-500/10 text-rose-500 border-rose-500/20">
-            <AlertTriangle className="w-2.5 h-2.5 mr-1" /> {status}
+          <span className="inline-flex items-center text-[11px] font-medium px-2.5 py-0.5 rounded-full border bg-status-danger-bg text-status-danger-text border-status-danger-border">
+            <AlertTriangle className="w-3 h-3 mr-1" /> {status}
           </span>
         );
     }
@@ -80,32 +80,32 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
             Transactional Outbox
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Durable PostgreSQL-backed event ledger with lease-based concurrency and exponential retry backoff.
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Durable PostgreSQL-backed event ledger with row leases and exponential retry backoff.
           </p>
         </div>
       </div>
 
-      {/* Summary Metrics Cards */}
+      {/* Summary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: 'Total Events', val: summary?.total ?? 0, color: 'text-foreground' },
           { label: 'Pending', val: summary?.pending ?? 0, color: 'text-muted-foreground' },
-          { label: 'In-Flight Lease', val: summary?.claimed ?? 0, color: 'text-sky-500' },
-          { label: 'Retrying (Backoff)', val: summary?.retrying ?? 0, color: 'text-amber-500' },
-          { label: 'Delivered (200 OK)', val: summary?.delivered ?? 0, color: 'text-emerald-600 dark:text-emerald-400' },
-          { label: 'Failed (Exhausted)', val: summary?.failed ?? 0, color: 'text-rose-500' },
+          { label: 'In-Flight Lease', val: summary?.claimed ?? 0, color: 'text-status-info-text' },
+          { label: 'Retrying (Backoff)', val: summary?.retrying ?? 0, color: 'text-status-warning-text' },
+          { label: 'Delivered (200 OK)', val: summary?.delivered ?? 0, color: 'text-status-success-text' },
+          { label: 'Failed (Exhausted)', val: summary?.failed ?? 0, color: 'text-status-danger-text' },
         ].map((stat, idx) => (
-          <div key={idx} className="border border-border rounded-lg p-3.5 bg-card">
-            <span className="text-[11px] text-muted-foreground font-mono block">{stat.label}</span>
-            <span className={`text-2xl font-mono font-semibold tracking-tight mt-1.5 block ${stat.color}`}>
+          <div key={idx} className="bg-card border border-border rounded-lg p-3.5 shadow-xs">
+            <span className="text-[11px] text-muted-foreground font-medium block">{stat.label}</span>
+            <span className={`text-2xl font-semibold tracking-tight mt-1.5 block ${stat.color}`}>
               {stat.val}
             </span>
           </div>
@@ -113,16 +113,16 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border border-border rounded-lg p-2.5 bg-card">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card border border-border rounded-lg p-3 shadow-xs">
         <div className="flex items-center space-x-1.5 overflow-x-auto">
           {['ALL', 'PENDING', 'CLAIMED', 'RETRYING', 'DELIVERED', 'FAILED'].map((st) => (
             <button
               key={st}
               onClick={() => setSelectedStatus(st === 'ALL' ? '' : st)}
-              className={`text-xs px-2.5 py-1 rounded-md font-mono transition-colors whitespace-nowrap ${
+              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors whitespace-nowrap border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 (st === 'ALL' && !selectedStatus) || selectedStatus === st
-                  ? 'bg-foreground text-background font-medium'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary-surface text-primary border-primary-surface-border font-semibold shadow-2xs'
+                  : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               {st}
@@ -131,39 +131,39 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
         </div>
 
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             placeholder="Filter by recipient email..."
             value={emailFilter}
             onChange={(e) => setEmailFilter(e.target.value)}
-            className="w-full sm:w-64 bg-background border border-border rounded-md pl-8 pr-3 py-1.5 text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-foreground"
+            className="w-full sm:w-64 bg-background border border-border rounded-md pl-9 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
           />
         </div>
       </div>
 
-      {/* Outbox Event Table or Empty State */}
-      <div className="border border-border rounded-lg overflow-hidden bg-card">
+      {/* Outbox Event Table */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-muted/40 border-b border-border text-muted-foreground font-mono text-[11px]">
+            <thead className="bg-muted/50 border-b border-border text-muted-foreground font-medium text-[11px]">
               <tr>
-                <th className="py-2.5 px-4 font-medium">Status</th>
-                <th className="py-2.5 px-4 font-medium">Event Type</th>
-                <th className="py-2.5 px-4 font-medium">Recipient</th>
-                <th className="py-2.5 px-4 font-medium">Attempts</th>
-                <th className="py-2.5 px-4 font-medium">Next Retry / Delivered</th>
-                <th className="py-2.5 px-4 font-medium">Last Error</th>
-                <th className="py-2.5 px-4 font-medium text-right">Details</th>
+                <th className="py-2.5 px-4">Status</th>
+                <th className="py-2.5 px-4">Event Type</th>
+                <th className="py-2.5 px-4">Recipient</th>
+                <th className="py-2.5 px-4">Attempts</th>
+                <th className="py-2.5 px-4">Next Retry / Delivered</th>
+                <th className="py-2.5 px-4">Last Error</th>
+                <th className="py-2.5 px-4 text-right">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border font-mono text-[11px]">
+            <tbody className="divide-y divide-border">
               {notifications.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center">
-                    <Inbox className="w-8 h-8 mx-auto text-muted-foreground mb-3 opacity-60" />
-                    <p className="text-foreground font-medium text-xs">No outbox events found</p>
-                    <p className="text-muted-foreground text-[11px] mt-1 max-w-sm mx-auto">
+                  <td colSpan={7} className="py-12 text-center">
+                    <Inbox className="w-8 h-8 mx-auto text-muted-foreground mb-2.5 opacity-60" />
+                    <p className="text-foreground font-semibold text-xs">No outbox events found</p>
+                    <p className="text-muted-foreground text-xs mt-1 max-w-sm mx-auto leading-relaxed">
                       {summary?.total === 0
                         ? 'No events have been dispatched to the outbox yet. Registering a member will generate an atomic outbox event.'
                         : 'No outbox events match your status or recipient filters.'}
@@ -172,21 +172,21 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
                 </tr>
               ) : (
                 notifications.map((n) => (
-                  <tr key={n.id} className="hover:bg-muted/20 transition-colors">
+                  <tr key={n.id} className="hover:bg-muted/30 transition-colors">
                     <td className="py-3 px-4">{getStatusBadge(n.status)}</td>
-                    <td className="py-3 px-4 text-foreground font-medium">
+                    <td className="py-3 px-4 text-foreground font-medium text-xs">
                       {n.event_type === 'WORKSHOP_REGISTRATION_CONFIRMATION'
                         ? 'CONFIRMATION'
                         : 'CANCELLATION'}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="text-foreground font-sans text-xs">{n.recipient_name}</div>
-                      <div className="text-muted-foreground text-[10px]">{n.recipient_email}</div>
+                      <div className="text-foreground font-medium text-xs">{n.recipient_name}</div>
+                      <div className="text-muted-foreground font-mono text-[11px]">{n.recipient_email}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="font-semibold text-foreground">{n.attempt_count}</span>
+                      <span className="font-semibold text-foreground text-xs">{n.attempt_count}</span>
                     </td>
-                    <td className="py-3 px-4 text-muted-foreground text-[10px]">
+                    <td className="py-3 px-4 text-muted-foreground text-xs">
                       {n.status === 'DELIVERED' && n.delivered_at
                         ? new Date(n.delivered_at).toLocaleTimeString()
                         : n.next_retry_at
@@ -196,19 +196,19 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
                     <td className="py-3 px-4 max-w-xs">
                       {n.last_error ? (
                         <span
-                          className="text-rose-500 truncate block text-[10px]"
+                          className="text-status-danger-text truncate block text-[11px] font-mono"
                           title={n.last_error}
                         >
                           {n.last_error}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground/40">—</span>
+                        <span className="text-muted-foreground/50">—</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => setInspectItem(n)}
-                        className="inline-flex items-center space-x-1 text-muted-foreground hover:text-foreground text-[11px] p-1 rounded transition-colors"
+                        className="inline-flex items-center space-x-1 text-primary hover:bg-primary-surface px-2.5 py-1 rounded text-xs font-medium transition-colors"
                         title="Inspect Event Payload"
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -223,59 +223,60 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
         </div>
       </div>
 
-      {/* Payload Inspection Modal */}
+      {/* Payload Inspection Dialog */}
       {inspectItem && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg max-w-lg w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg max-w-lg w-full p-6 shadow-lg animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
             <div className="flex items-start justify-between pb-3 border-b border-border">
               <div>
                 <div className="flex items-center space-x-2">
-                  <h3 className="text-sm font-semibold text-foreground">Outbox Event Inspector</h3>
+                  <h3 className="text-base font-semibold text-foreground">Event Payload Inspector</h3>
                   {getStatusBadge(inspectItem.status)}
                 </div>
-                <p className="text-[11px] font-mono text-muted-foreground mt-1">ID: {inspectItem.id}</p>
+                <p className="text-xs font-mono text-muted-foreground mt-1">ID: {inspectItem.id}</p>
               </div>
               <button
                 onClick={() => setInspectItem(null)}
-                className="text-muted-foreground hover:text-foreground p-1"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md"
+                aria-label="Close dialog"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="py-4 space-y-4 overflow-y-auto flex-1 text-xs font-mono">
+            <div className="py-4 space-y-3.5 overflow-y-auto flex-1 text-xs">
               {/* Idempotency Key */}
-              <div className="p-2.5 rounded border border-border bg-background space-y-1">
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <div className="p-3 rounded-lg border border-border bg-muted/40 space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
                   <span>DETERMINISTIC IDEMPOTENCY KEY</span>
                   <button
                     onClick={() => handleCopy(inspectItem.idempotency_key)}
-                    className="flex items-center space-x-1 hover:text-foreground"
+                    className="flex items-center space-x-1 text-primary hover:underline font-medium"
                   >
-                    {copiedKey ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                    <span>{copiedKey ? 'Copied' : 'Copy'}</span>
+                    {copiedKey ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedKey ? 'Copied' : 'Copy Key'}</span>
                   </button>
                 </div>
-                <div className="text-foreground text-[11px] break-all">{inspectItem.idempotency_key}</div>
+                <div className="text-foreground font-mono text-xs break-all">{inspectItem.idempotency_key}</div>
               </div>
 
               {/* Delivery Metadata */}
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div className="p-2 rounded border border-border bg-background">
-                  <span className="text-muted-foreground text-[10px] block">Attempts Count</span>
-                  <span className="text-foreground font-semibold">{inspectItem.attempt_count}</span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-lg border border-border bg-background">
+                  <span className="text-muted-foreground text-[11px] block font-medium">Attempts Count</span>
+                  <span className="text-foreground font-semibold mt-0.5 block">{inspectItem.attempt_count}</span>
                 </div>
-                <div className="p-2 rounded border border-border bg-background">
-                  <span className="text-muted-foreground text-[10px] block">Claimed By Worker</span>
-                  <span className="text-foreground truncate block">{inspectItem.claimed_by || 'None (Unclaimed)'}</span>
+                <div className="p-2.5 rounded-lg border border-border bg-background">
+                  <span className="text-muted-foreground text-[11px] block font-medium">Claimed By</span>
+                  <span className="text-foreground truncate block mt-0.5">{inspectItem.claimed_by || 'Unclaimed'}</span>
                 </div>
-                <div className="p-2 rounded border border-border bg-background">
-                  <span className="text-muted-foreground text-[10px] block">Created At</span>
-                  <span className="text-foreground">{new Date(inspectItem.created_at).toLocaleString()}</span>
+                <div className="p-2.5 rounded-lg border border-border bg-background">
+                  <span className="text-muted-foreground text-[11px] block font-medium">Created At</span>
+                  <span className="text-foreground mt-0.5 block">{new Date(inspectItem.created_at).toLocaleString()}</span>
                 </div>
-                <div className="p-2 rounded border border-border bg-background">
-                  <span className="text-muted-foreground text-[10px] block">Next Retry At</span>
-                  <span className="text-foreground">
+                <div className="p-2.5 rounded-lg border border-border bg-background">
+                  <span className="text-muted-foreground text-[11px] block font-medium">Next Retry At</span>
+                  <span className="text-foreground mt-0.5 block">
                     {inspectItem.next_retry_at ? new Date(inspectItem.next_retry_at).toLocaleString() : 'N/A'}
                   </span>
                 </div>
@@ -283,16 +284,16 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
 
               {/* Last Error if any */}
               {inspectItem.last_error && (
-                <div className="p-2.5 rounded border border-rose-500/20 bg-rose-500/5 text-rose-500 space-y-1">
-                  <span className="text-[10px] font-semibold block">LAST RECORDED ERROR</span>
-                  <div className="text-[11px] leading-relaxed break-all">{inspectItem.last_error}</div>
+                <div className="p-3 rounded-lg border border-status-danger-border bg-status-danger-bg text-status-danger-text space-y-1">
+                  <span className="text-xs font-semibold block">LAST RECORDED ERROR</span>
+                  <div className="text-xs font-mono break-all leading-relaxed">{inspectItem.last_error}</div>
                 </div>
               )}
 
-              {/* Serialized JSON Payload */}
+              {/* JSON Payload */}
               <div>
-                <span className="text-muted-foreground text-[10px] block mb-1">DISPATCH PAYLOAD (JSON)</span>
-                <pre className="p-3 rounded border border-border bg-background text-[11px] text-foreground overflow-x-auto">
+                <span className="text-muted-foreground text-xs font-medium block mb-1">DISPATCH PAYLOAD (JSON)</span>
+                <pre className="p-3 rounded-lg border border-border bg-muted/30 font-mono text-xs text-foreground overflow-x-auto leading-relaxed">
                   {JSON.stringify(inspectItem.payload, null, 2)}
                 </pre>
               </div>
@@ -301,9 +302,9 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
             <div className="pt-3 border-t border-border flex items-center justify-end">
               <button
                 onClick={() => setInspectItem(null)}
-                className="px-3.5 py-1.5 rounded-md text-xs font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
+                className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs transition-colors"
               >
-                Close Inspector
+                Close
               </button>
             </div>
           </div>

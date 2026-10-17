@@ -4,69 +4,81 @@
 
 @layer base {
   :root {
-    /* Light Mode: White and soft warm-neutral surfaces (Linear / Stripe style) */
-    --background: 40 20% 99%;
-    --foreground: 240 10% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
-    --sidebar: 30 15% 98%;
-    --border: 240 5% 90%;
-    --border-subtle: 240 5% 94%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 45%;
-    --accent: 240 5% 93%;
-    --accent-foreground: 240 10% 10%;
+    /* Google Material Light Mode Palette */
+    /* Clean white canvas, Google dark charcoal text, subtle light grey borders */
+    --background: 210 20% 98%;          /* #f8f9fa Google page background */
+    --foreground: 220 6% 13%;           /* #202124 Google dark charcoal primary text */
+    --card: 0 0% 100%;                  /* #ffffff Pure white cards & dialogs */
+    --card-foreground: 220 6% 13%;      /* #202124 */
+    --sidebar: 0 0% 100%;
+    --border: 216 7% 87%;               /* #dadce0 Google standard border */
+    --border-subtle: 214 9% 93%;        /* #e8eaed Subtle divider */
+    --muted: 210 14% 95%;               /* #f1f3f4 Google hover / secondary surface */
+    --muted-foreground: 215 5% 39%;     /* #5f6368 Google readable secondary text */
     
-    /* Semantic Status Tokens (Light mode readable) */
-    --status-success-bg: 142 76% 96%;
-    --status-success-text: 142 72% 28%;
-    --status-success-border: 142 50% 86%;
+    /* Google Blue primary accents */
+    --primary: 217 89% 51%;             /* #1a73e8 Google Blue 600 */
+    --primary-hover: 217 82% 45%;       /* #1557d0 Google Blue 700 */
+    --primary-foreground: 0 0% 100%;    /* #ffffff */
+    --primary-surface: 214 100% 95%;    /* #e8f0fe Google Blue 50 active tint */
+    --primary-surface-border: 214 85% 88%; /* #d2e3fc */
 
-    --status-warning-bg: 38 92% 96%;
-    --status-warning-text: 38 80% 30%;
-    --status-warning-border: 38 60% 86%;
+    /* Semantic Status Tokens (Google Material colors) */
+    --status-success-bg: 134 50% 94%;   /* #e6f4ea Google Green light */
+    --status-success-text: 138 72% 26%; /* #137333 Google Green dark */
+    --status-success-border: 137 40% 86%; /* #ceead6 */
 
-    --status-info-bg: 210 80% 96%;
-    --status-info-text: 215 75% 32%;
-    --status-info-border: 210 60% 88%;
+    --status-warning-bg: 46 92% 94%;    /* #fef7e0 Google Amber light */
+    --status-warning-text: 33 100% 35%; /* #b06000 Google Amber dark */
+    --status-warning-border: 45 88% 88%; /* #feefc3 */
 
-    --status-danger-bg: 0 84% 97%;
-    --status-danger-text: 0 72% 38%;
-    --status-danger-border: 0 60% 88%;
+    --status-info-bg: 214 100% 95%;     /* #e8f0fe Google Blue light */
+    --status-info-text: 217 76% 40%;    /* #1967d2 Google Blue dark */
+    --status-info-border: 214 85% 88%;  /* #d2e3fc */
+
+    --status-danger-bg: 4 84% 95%;      /* #fce8e6 Google Red light */
+    --status-danger-text: 1 73% 45%;    /* #c5221f Google Red dark */
+    --status-danger-border: 3 67% 89%;  /* #fad2cf */
 
     --brightness: 1;
   }
 
   .dark {
-    /* Dark Mode: Restrained neutral charcoal surfaces (Raycast / Obsidian style) */
-    --background: 240 6% 7%;
-    --foreground: 0 0% 96%;
-    --card: 240 5% 10%;
-    --card-foreground: 0 0% 96%;
-    --sidebar: 240 5% 8%;
-    --border: 240 4% 17%;
-    --border-subtle: 240 4% 13%;
-    --muted: 240 4% 14%;
-    --muted-foreground: 240 4% 60%;
-    --accent: 240 4% 18%;
-    --accent-foreground: 0 0% 98%;
+    /* Google Material Dark Mode Palette */
+    /* Neutral charcoal #202124 surfaces, light readable text #e8eaed, no purple/neon */
+    --background: 220 6% 13%;           /* #202124 Google dark canvas */
+    --foreground: 216 12% 92%;          /* #e8eaed Google dark primary text */
+    --card: 216 5% 18%;                 /* #2d2f31 Google dark card surface */
+    --card-foreground: 216 12% 92%;     /* #e8eaed */
+    --sidebar: 220 6% 15%;              /* #242628 */
+    --border: 218 5% 25%;               /* #3c4043 Google dark border */
+    --border-subtle: 220 5% 20%;        /* #303134 Google dark divider */
+    --muted: 220 5% 22%;                /* #333538 Google dark hover surface */
+    --muted-foreground: 217 6% 63%;     /* #9aa0a6 Google dark secondary text */
 
-    /* Semantic Status Tokens (Dark mode readable) */
-    --status-success-bg: 142 50% 10%;
-    --status-success-text: 142 65% 65%;
-    --status-success-border: 142 40% 20%;
+    /* Google Blue in dark mode */
+    --primary: 217 89% 76%;             /* #8ab4f8 Google Blue dark */
+    --primary-hover: 217 89% 82%;       /* #aecbfa */
+    --primary-foreground: 220 6% 13%;   /* #202124 */
+    --primary-surface: 215 50% 20%;     /* #1a3860 Google Blue dark surface */
+    --primary-surface-border: 215 45% 28%;
 
-    --status-warning-bg: 38 50% 10%;
-    --status-warning-text: 38 80% 65%;
-    --status-warning-border: 38 40% 22%;
+    /* Semantic Status Tokens (Google Dark) */
+    --status-success-bg: 135 30% 15%;   /* #0f381e */
+    --status-success-text: 137 42% 65%; /* #81c995 */
+    --status-success-border: 136 28% 22%;
 
-    --status-info-bg: 215 45% 12%;
-    --status-info-text: 215 75% 70%;
-    --status-info-border: 215 35% 24%;
+    --status-warning-bg: 45 40% 14%;    /* #3e2e00 */
+    --status-warning-text: 45 96% 69%;  /* #fdd663 */
+    --status-warning-border: 45 35% 22%;
 
-    --status-danger-bg: 0 50% 11%;
-    --status-danger-text: 0 75% 70%;
-    --status-danger-border: 0 40% 24%;
+    --status-info-bg: 215 50% 18%;      /* #173860 */
+    --status-info-text: 217 89% 76%;    /* #8ab4f8 */
+    --status-info-border: 215 40% 26%;
+
+    --status-danger-bg: 4 35% 18%;      /* #3c1e1e */
+    --status-danger-text: 5 82% 73%;    /* #f28b82 */
+    --status-danger-border: 4 30% 26%;
   }
 }
 
@@ -78,23 +90,23 @@ html {
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle, refined scrollbar */
+/* Subtle, Google-style scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
-  border-radius: 9999px;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.4);
+  background: hsl(var(--muted-foreground) / 0.5);
 }

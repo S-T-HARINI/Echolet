@@ -9,7 +9,7 @@ import {
   Sliders,
   RefreshCw,
   LayoutDashboard,
-  Layers,
+  Calendar,
   Users,
   Inbox,
   Cpu,
@@ -53,25 +53,25 @@ export const Header: React.FC<HeaderProps> = ({
     {
       id: 'overview',
       label: 'Overview',
-      icon: <LayoutDashboard className="w-3.5 h-3.5" />,
+      icon: <LayoutDashboard className="w-4 h-4" />,
     },
     {
       id: 'workshops',
       label: 'Workshops',
-      icon: <Layers className="w-3.5 h-3.5" />,
+      icon: <Calendar className="w-4 h-4" />,
     },
     {
       id: 'registrations',
       label: 'Registrations',
-      icon: <Users className="w-3.5 h-3.5" />,
+      icon: <Users className="w-4 h-4" />,
     },
     {
       id: 'outbox',
       label: 'Transactional Outbox',
-      icon: <Inbox className="w-3.5 h-3.5" />,
+      icon: <Inbox className="w-4 h-4" />,
       badge:
         outboxPendingCount > 0 ? (
-          <span className="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-500 font-medium">
+          <span className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-status-warning-bg text-status-warning-text border border-status-warning-border">
             {outboxPendingCount}
           </span>
         ) : undefined,
@@ -79,10 +79,10 @@ export const Header: React.FC<HeaderProps> = ({
     {
       id: 'simulator',
       label: 'Failure Simulator',
-      icon: <Cpu className="w-3.5 h-3.5" />,
+      icon: <Cpu className="w-4 h-4" />,
       badge:
         simulatorMode && simulatorMode !== 'normal' ? (
-          <span className="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-rose-500/20 text-rose-500 font-medium">
+          <span className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-status-danger-bg text-status-danger-text border border-status-danger-border">
             {simulatorMode.toUpperCase()}
           </span>
         ) : undefined,
@@ -90,44 +90,57 @@ export const Header: React.FC<HeaderProps> = ({
     {
       id: 'architecture',
       label: 'System Architecture',
-      icon: <BookOpen className="w-3.5 h-3.5" />,
+      icon: <BookOpen className="w-4 h-4" />,
     },
   ];
 
   return (
-    <header className="border-b border-border bg-card/70 backdrop-blur-md sticky top-0 z-30 transition-colors">
-      {/* Top Bar: Brand, Health, Global Controls */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-        {/* Brand */}
-        <div className="flex items-center space-x-3">
+    <header className="border-b border-border bg-card sticky top-0 z-30 shadow-[0_1px_2px_0_rgba(60,64,67,0.06)]">
+      {/* Top Header Bar: Google style compact branding and actions */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        {/* Left: Brand & Status */}
+        <div className="flex items-center space-x-3.5">
           <div className="flex items-center space-x-2.5">
-            <div className="w-6 h-6 rounded border border-border bg-foreground flex items-center justify-center">
-              <span className="text-[10px] font-mono font-bold text-background leading-none">E</span>
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-xs">
+              <span className="text-sm font-bold text-white tracking-wider leading-none">E</span>
             </div>
-            <span className="font-semibold tracking-tight text-base text-foreground">
-              EchoLet
-            </span>
+            <div className="flex flex-col">
+              <span className="font-semibold text-foreground text-base tracking-tight leading-tight">
+                EchoLet
+              </span>
+              <span className="text-[11px] text-muted-foreground hidden sm:inline leading-none font-medium">
+                Workshop &amp; Outbox Engine
+              </span>
+            </div>
           </div>
 
-          <div className="hidden sm:flex items-center space-x-2 pl-3 border-l border-border text-xs text-muted-foreground">
+          <div className="hidden md:flex items-center pl-3 border-l border-border-subtle">
             <span
-              className={`inline-block w-2 h-2 rounded-full ${
-                systemStatus === 'healthy' ? 'bg-emerald-500' : 'bg-amber-500'
-              } animate-pulse`}
-            />
-            <span className="font-mono text-[11px]">Transactional Outbox Engine</span>
+              className={`inline-flex items-center space-x-1.5 text-xs px-2.5 py-0.5 rounded-full border font-medium ${
+                systemStatus === 'healthy'
+                  ? 'bg-status-success-bg text-status-success-text border-status-success-border'
+                  : 'bg-status-warning-bg text-status-warning-text border-status-warning-border'
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  systemStatus === 'healthy' ? 'bg-emerald-500' : 'bg-amber-500'
+                } animate-pulse`}
+              />
+              <span>System {systemStatus === 'healthy' ? 'Healthy' : 'Degraded'}</span>
+            </span>
           </div>
         </div>
 
-        {/* Global Controls */}
-        <div className="flex items-center space-x-2.5 sm:space-x-3">
+        {/* Right: Controls */}
+        <div className="flex items-center space-x-2 sm:space-x-3">
           {/* Auto Refresh & Manual Refresh */}
-          <div className="flex items-center space-x-1 border border-border rounded-md px-1.5 py-0.5 bg-muted/40 text-xs">
+          <div className="flex items-center space-x-1 border border-border rounded-md px-1.5 py-0.5 bg-muted/60 text-xs">
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-2 py-0.5 rounded text-[11px] font-mono transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground ${
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 autoRefresh
-                  ? 'bg-foreground text-background font-medium'
+                  ? 'bg-primary text-white shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
               title="Toggle auto-refresh every 3 seconds"
@@ -137,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground"
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               title="Refresh all data"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -145,9 +158,9 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Brightness Adjustment Slider */}
-          <div className="hidden md:flex items-center space-x-2 border border-border rounded-md px-2.5 py-1 bg-muted/40 text-xs">
+          <div className="hidden lg:flex items-center space-x-2 border border-border rounded-md px-2.5 py-1 bg-muted/40 text-xs">
             <Sliders className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-mono text-muted-foreground">Bright</span>
+            <span className="text-xs text-muted-foreground font-medium">Bright</span>
             <input
               type="range"
               min="0.8"
@@ -155,73 +168,75 @@ export const Header: React.FC<HeaderProps> = ({
               step="0.05"
               value={brightness}
               onChange={(e) => setBrightness(parseFloat(e.target.value))}
-              className="w-16 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-foreground"
+              className="w-16 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
               aria-label="Interface brightness adjustment"
             />
-            <span className="text-[10px] font-mono text-muted-foreground w-7">
+            <span className="text-[11px] text-muted-foreground font-mono w-7">
               {Math.round(brightness * 100)}%
             </span>
           </div>
 
           {/* Theme Selector (Light, Dark, System) */}
-          <div className="flex items-center rounded-md border border-border p-0.5 bg-muted/40">
+          <div className="flex items-center rounded-md border border-border p-0.5 bg-muted/50">
             <button
               onClick={() => setTheme('light')}
-              className={`p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground ${
+              className={`p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 theme === 'light'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-primary-surface text-primary shadow-xs font-medium'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="Light Appearance (warm-neutral)"
+              title="Light Appearance (Clean Google white)"
               aria-label="Set light appearance"
             >
-              <Sun className="w-3.5 h-3.5" />
+              <Sun className="w-4 h-4" />
             </button>
             <button
               onClick={() => setTheme('dark')}
-              className={`p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground ${
+              className={`p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 theme === 'dark'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-primary-surface text-primary shadow-xs font-medium'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="Dark Appearance (neutral charcoal)"
+              title="Dark Appearance (Google charcoal #202124)"
               aria-label="Set dark appearance"
             >
-              <Moon className="w-3.5 h-3.5" />
+              <Moon className="w-4 h-4" />
             </button>
             <button
               onClick={() => setTheme('system')}
-              className={`p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground ${
+              className={`p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 theme === 'system'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-primary-surface text-primary shadow-xs font-medium'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
               title="System Appearance"
               aria-label="Follow system appearance"
             >
-              <Laptop className="w-3.5 h-3.5" />
+              <Laptop className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Secondary Bar: Clean Tab Navigation */}
-      <div className="border-t border-border/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto py-1 text-xs">
+      {/* Navigation Bar: Google Workspace / Google Calendar tab style */}
+      <div className="border-t border-border-subtle bg-card">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <nav className="flex space-x-1 sm:space-x-2 overflow-x-auto text-sm">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center space-x-1.5 px-3 py-2 rounded-md font-medium whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground ${
+                  className={`flex items-center space-x-2 px-3.5 py-2.5 font-medium whitespace-nowrap transition-colors relative border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     isActive
-                      ? 'bg-background text-foreground shadow-xs border border-border/80 font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                      ? 'border-primary text-primary font-semibold'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/60'
                   }`}
                 >
-                  {item.icon}
+                  <span className={isActive ? 'text-primary' : 'text-muted-foreground'}>
+                    {item.icon}
+                  </span>
                   <span>{item.label}</span>
                   {item.badge}
                 </button>

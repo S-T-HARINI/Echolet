@@ -25,8 +25,15 @@ module.exports = {
           foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: 'hsl(var(--accent, var(--muted)))',
+          foreground: 'hsl(var(--accent-foreground, var(--foreground)))',
+        },
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          hover: 'hsl(var(--primary-hover))',
+          foreground: 'hsl(var(--primary-foreground))',
+          surface: 'hsl(var(--primary-surface))',
+          'surface-border': 'hsl(var(--primary-surface-border))',
         },
         status: {
           success: {
