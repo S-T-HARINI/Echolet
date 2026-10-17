@@ -2,29 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 9%;
-  --card: 0 0% 99%;
-  --card-foreground: 0 0% 9%;
-  --border: 0 0% 88%;
-  --muted: 0 0% 96%;
-  --muted-foreground: 0 0% 40%;
-  --accent: 0 0% 94%;
-  --accent-foreground: 0 0% 9%;
-  --brightness: 1;
-}
+@layer base {
+  :root {
+    /* Light Mode: White and soft warm-neutral surfaces (Linear / Stripe style) */
+    --background: 40 20% 99%;
+    --foreground: 240 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+    --sidebar: 30 15% 98%;
+    --border: 240 5% 90%;
+    --border-subtle: 240 5% 94%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 45%;
+    --accent: 240 5% 93%;
+    --accent-foreground: 240 10% 10%;
+    
+    /* Semantic Status Tokens (Light mode readable) */
+    --status-success-bg: 142 76% 96%;
+    --status-success-text: 142 72% 28%;
+    --status-success-border: 142 50% 86%;
 
-.dark {
-  --background: 0 0% 4%;
-  --foreground: 0 0% 98%;
-  --card: 0 0% 7%;
-  --card-foreground: 0 0% 98%;
-  --border: 0 0% 15%;
-  --muted: 0 0% 11%;
-  --muted-foreground: 0 0% 60%;
-  --accent: 0 0% 12%;
-  --accent-foreground: 0 0% 98%;
+    --status-warning-bg: 38 92% 96%;
+    --status-warning-text: 38 80% 30%;
+    --status-warning-border: 38 60% 86%;
+
+    --status-info-bg: 210 80% 96%;
+    --status-info-text: 215 75% 32%;
+    --status-info-border: 210 60% 88%;
+
+    --status-danger-bg: 0 84% 97%;
+    --status-danger-text: 0 72% 38%;
+    --status-danger-border: 0 60% 88%;
+
+    --brightness: 1;
+  }
+
+  .dark {
+    /* Dark Mode: Restrained neutral charcoal surfaces (Raycast / Obsidian style) */
+    --background: 240 6% 7%;
+    --foreground: 0 0% 96%;
+    --card: 240 5% 10%;
+    --card-foreground: 0 0% 96%;
+    --sidebar: 240 5% 8%;
+    --border: 240 4% 17%;
+    --border-subtle: 240 4% 13%;
+    --muted: 240 4% 14%;
+    --muted-foreground: 240 4% 60%;
+    --accent: 240 4% 18%;
+    --accent-foreground: 0 0% 98%;
+
+    /* Semantic Status Tokens (Dark mode readable) */
+    --status-success-bg: 142 50% 10%;
+    --status-success-text: 142 65% 65%;
+    --status-success-border: 142 40% 20%;
+
+    --status-warning-bg: 38 50% 10%;
+    --status-warning-text: 38 80% 65%;
+    --status-warning-border: 38 40% 22%;
+
+    --status-info-bg: 215 45% 12%;
+    --status-info-text: 215 75% 70%;
+    --status-info-border: 215 35% 24%;
+
+    --status-danger-bg: 0 50% 11%;
+    --status-danger-text: 0 75% 70%;
+    --status-danger-border: 0 40% 24%;
+  }
 }
 
 html {
@@ -40,18 +83,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom minimal scrollbar */
+/* Subtle, refined scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
-  border-radius: 3px;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--muted-foreground) / 0.4);
 }

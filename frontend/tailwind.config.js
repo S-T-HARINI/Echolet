@@ -9,9 +9,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        border: 'hsl(var(--border))',
+        border: {
+          DEFAULT: 'hsl(var(--border))',
+          subtle: 'hsl(var(--border-subtle))',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        sidebar: 'hsl(var(--sidebar))',
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
@@ -24,9 +28,28 @@ module.exports = {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
         },
-        zinc: {
-          950: '#09090b',
-        }
+        status: {
+          success: {
+            bg: 'hsl(var(--status-success-bg))',
+            text: 'hsl(var(--status-success-text))',
+            border: 'hsl(var(--status-success-border))',
+          },
+          warning: {
+            bg: 'hsl(var(--status-warning-bg))',
+            text: 'hsl(var(--status-warning-text))',
+            border: 'hsl(var(--status-warning-border))',
+          },
+          info: {
+            bg: 'hsl(var(--status-info-bg))',
+            text: 'hsl(var(--status-info-text))',
+            border: 'hsl(var(--status-info-border))',
+          },
+          danger: {
+            bg: 'hsl(var(--status-danger-bg))',
+            text: 'hsl(var(--status-danger-text))',
+            border: 'hsl(var(--status-danger-border))',
+          },
+        },
       },
       fontFamily: {
         sans: [
