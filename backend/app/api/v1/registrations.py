@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.database import get_db_session
@@ -74,3 +74,24 @@ async def list_registrations(
         ]
     except EchoLetException as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
+
+
+global_registrations_router = APIRouter(prefix="/registrations", tags=["Registrations"])
+
+
+@global_registrations_router.get(
+    "",
+    response_model=List[dict],
+    summary="List all registrations across workshops",
+    description="Retrieve registrations across all workshops with optional workshop filter.",
+)
+async def list_all_registrations(
+    workshop_id: Optional[str] = Query(None, description="Filter by workshop ID"),
+    limit: int = Query(100, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db_session),
+) -> List[dict]:
+    items, _ = await RegistrationService.list_all_registrations(
+        db, workshop_id=workshop_id, limit=limit, offset=offset
+    )
+    return items

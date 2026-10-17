@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -158,3 +158,47 @@ class RegistrationService:
         res = await session.execute(query)
         registrations = res.scalars().all()
         return list(registrations), total
+
+    @staticmethod
+    async def list_all_registrations(
+        session: AsyncSession,
+        workshop_id: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> Tuple[List[dict], int]:
+        query = (
+            select(
+                Registration,
+                Workshop.title.label("workshop_title"),
+                Workshop.status.label("workshop_status"),
+            )
+            .join(Workshop, Registration.workshop_id == Workshop.id)
+            .order_by(Registration.registered_at.desc())
+        )
+        count_query = select(func.count(Registration.id))
+
+        if workshop_id:
+            query = query.where(Registration.workshop_id == workshop_id)
+            count_query = count_query.where(Registration.workshop_id == workshop_id)
+
+        query = query.limit(limit).offset(offset)
+        total_res = await session.execute(count_query)
+        total = total_res.scalar() or 0
+
+        res = await session.execute(query)
+        rows = res.all()
+
+        items = []
+        for reg, w_title, w_status in rows:
+            items.append({
+                "id": reg.id,
+                "workshop_id": reg.workshop_id,
+                "workshop_title": w_title,
+                "workshop_status": w_status,
+                "member_id": reg.member_id,
+                "member_name": reg.member_name,
+                "member_email": reg.member_email,
+                "status": reg.status,
+                "registered_at": reg.registered_at,
+            })
+        return items, total
