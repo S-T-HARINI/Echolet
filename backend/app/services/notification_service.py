@@ -6,6 +6,7 @@ from backend.app.models.outbox import (
     NotificationOutbox,
     NotificationStatus,
 )
+from backend.app.models.workshop import Workshop
 from backend.app.schemas.notification import NotificationSummaryResponse
 
 
@@ -25,11 +26,20 @@ class NotificationService:
         workshop_id: Optional[str] = None,
         recipient_email: Optional[str] = None,
         status: Optional[str] = None,
+        organizer_id: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
     ) -> Tuple[List[NotificationOutbox], int]:
         query = select(NotificationOutbox)
         count_query = select(func.count(NotificationOutbox.id))
+
+        if organizer_id:
+            query = query.join(Workshop, NotificationOutbox.workshop_id == Workshop.id).where(
+                Workshop.organizer_id == organizer_id
+            )
+            count_query = count_query.join(Workshop, NotificationOutbox.workshop_id == Workshop.id).where(
+                Workshop.organizer_id == organizer_id
+            )
 
         if workshop_id:
             query = query.where(NotificationOutbox.workshop_id == workshop_id)
@@ -53,7 +63,10 @@ class NotificationService:
         return list(notifications), total
 
     @staticmethod
-    async def get_summary(session: AsyncSession) -> NotificationSummaryResponse:
+    async def get_summary(
+        session: AsyncSession,
+        organizer_id: Optional[str] = None
+    ) -> NotificationSummaryResponse:
         statuses = [
             NotificationStatus.PENDING,
             NotificationStatus.CLAIMED,
@@ -64,10 +77,18 @@ class NotificationService:
         counts = {}
         for s in statuses:
             stmt = select(func.count(NotificationOutbox.id)).where(NotificationOutbox.status == s)
+            if organizer_id:
+                stmt = stmt.join(Workshop, NotificationOutbox.workshop_id == Workshop.id).where(
+                    Workshop.organizer_id == organizer_id
+                )
             res = await session.execute(stmt)
             counts[s] = res.scalar() or 0
 
         total_stmt = select(func.count(NotificationOutbox.id))
+        if organizer_id:
+            total_stmt = total_stmt.join(Workshop, NotificationOutbox.workshop_id == Workshop.id).where(
+                Workshop.organizer_id == organizer_id
+            )
         total_res = await session.execute(total_stmt)
         total = total_res.scalar() or 0
 

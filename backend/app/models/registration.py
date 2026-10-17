@@ -1,8 +1,12 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.models.base import Base, generate_uuid, utc_now
+
+if TYPE_CHECKING:
+    from backend.app.models.user import User
+    from backend.app.models.workshop import Workshop
 
 
 class RegistrationStatus:
@@ -51,8 +55,18 @@ class Registration(Base):
         default=utc_now,
         nullable=False
     )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
 
-    # Relationship
+    # Relationships
+    user: Mapped[Optional["User"]] = relationship(
+        "User",
+        back_populates="registrations"
+    )
     workshop: Mapped["Workshop"] = relationship(
         "Workshop",
         back_populates="registrations"

@@ -4,10 +4,12 @@ from backend.app.api.v1.registrations import (
     router as registrations_router,
     global_registrations_router,
 )
+from backend.app.api.v1.auth import router as auth_router
 from backend.app.api.v1.notifications import router as notifications_router
 from backend.app.api.v1.health import router as health_router
 
 api_v1_router = APIRouter(prefix="/api/v1")
+api_v1_router.include_router(auth_router)
 api_v1_router.include_router(workshops_router)
 api_v1_router.include_router(registrations_router)
 api_v1_router.include_router(global_registrations_router)

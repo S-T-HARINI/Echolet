@@ -1,8 +1,13 @@
 from datetime import datetime
-from typing import List, Optional
-from sqlalchemy import DateTime, Integer, String, Text
+from typing import List, Optional, TYPE_CHECKING
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.models.base import Base, generate_uuid, utc_now
+
+if TYPE_CHECKING:
+    from backend.app.models.user import User
+    from backend.app.models.registration import Registration
+    from backend.app.models.outbox import NotificationOutbox
 
 
 class WorkshopStatus:
@@ -53,8 +58,18 @@ class Workshop(Base):
         DateTime(timezone=True),
         nullable=True
     )
+    organizer_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
 
     # Relationships
+    organizer: Mapped[Optional["User"]] = relationship(
+        "User",
+        back_populates="workshops"
+    )
     registrations: Mapped[List["Registration"]] = relationship(
         "Registration",
         back_populates="workshop",

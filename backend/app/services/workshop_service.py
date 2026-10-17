@@ -16,13 +16,18 @@ from backend.app.schemas.workshop import WorkshopCreate
 
 class WorkshopService:
     @staticmethod
-    async def create_workshop(session: AsyncSession, data: WorkshopCreate) -> Workshop:
+    async def create_workshop(
+        session: AsyncSession,
+        data: WorkshopCreate,
+        organizer_id: Optional[str] = None
+    ) -> Workshop:
         workshop = Workshop(
             title=data.title,
             description=data.description,
             schedule=data.schedule,
             capacity=data.capacity,
             status=WorkshopStatus.SCHEDULED,
+            organizer_id=organizer_id,
         )
         session.add(workshop)
         await session.commit()
@@ -54,6 +59,7 @@ class WorkshopService:
     async def list_workshops(
         session: AsyncSession,
         status: Optional[str] = None,
+        organizer_id: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
     ) -> Tuple[List[Tuple[Workshop, int]], int]:
@@ -63,6 +69,10 @@ class WorkshopService:
         if status:
             query = query.where(Workshop.status == status)
             count_query = count_query.where(Workshop.status == status)
+
+        if organizer_id:
+            query = query.where(Workshop.organizer_id == organizer_id)
+            count_query = count_query.where(Workshop.organizer_id == organizer_id)
 
         query = query.order_by(Workshop.schedule.asc()).limit(limit).offset(offset)
 
@@ -81,7 +91,11 @@ class WorkshopService:
         return items, total
 
     @staticmethod
-    async def cancel_workshop(session: AsyncSession, workshop_id: str) -> Tuple[Workshop, int]:
+    async def cancel_workshop(
+        session: AsyncSession,
+        workshop_id: str,
+        caller_user_id: Optional[str] = None,
+    ) -> Tuple[Workshop, int]:
         """
         Idempotently cancels a workshop and fans out cancellation notifications
         to all confirmed registrations within the same database transaction.
@@ -95,6 +109,14 @@ class WorkshopService:
         workshop = result.scalar_one_or_none()
         if not workshop:
             raise WorkshopNotFoundError(workshop_id)
+
+        # Ownership authorization check
+        if caller_user_id and workshop.organizer_id and workshop.organizer_id != caller_user_id:
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=403,
+                detail="You are not authorized to cancel this workshop as it belongs to another organizer."
+            )
 
         # Idempotency check: If already cancelled, do not regenerate notifications
         if workshop.status == WorkshopStatus.CANCELLED:

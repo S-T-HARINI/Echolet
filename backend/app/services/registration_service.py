@@ -25,6 +25,7 @@ class RegistrationService:
         session: AsyncSession,
         workshop_id: str,
         data: RegistrationCreate,
+        user_id: Optional[str] = None,
     ) -> Tuple[Registration, NotificationOutbox]:
         """
         Atomically registers a member for a workshop and creates a pending
@@ -85,6 +86,7 @@ class RegistrationService:
             member_email=data.member_email,
             status=RegistrationStatus.CONFIRMED,
             registered_at=now,
+            user_id=user_id,
         )
         session.add(registration)
 
@@ -163,6 +165,8 @@ class RegistrationService:
     async def list_all_registrations(
         session: AsyncSession,
         workshop_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        organizer_id: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> Tuple[List[dict], int]:
@@ -175,11 +179,19 @@ class RegistrationService:
             .join(Workshop, Registration.workshop_id == Workshop.id)
             .order_by(Registration.registered_at.desc())
         )
-        count_query = select(func.count(Registration.id))
+        count_query = select(func.count(Registration.id)).join(Workshop, Registration.workshop_id == Workshop.id)
 
         if workshop_id:
             query = query.where(Registration.workshop_id == workshop_id)
             count_query = count_query.where(Registration.workshop_id == workshop_id)
+
+        if user_id:
+            query = query.where(Registration.user_id == user_id)
+            count_query = count_query.where(Registration.user_id == user_id)
+
+        if organizer_id:
+            query = query.where(Workshop.organizer_id == organizer_id)
+            count_query = count_query.where(Workshop.organizer_id == organizer_id)
 
         query = query.limit(limit).offset(offset)
         total_res = await session.execute(count_query)

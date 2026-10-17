@@ -72,6 +72,9 @@ async def mock_service_db():
         await conn.run_sync(MockBase.metadata.drop_all)
 
 
+from backend.app.auth.dependencies import get_current_user, require_member, require_organizer
+from backend.app.models.user import User
+
 @pytest_asyncio.fixture(scope="function")
 async def client(test_engine):
     session_factory = async_sessionmaker(
@@ -88,6 +91,24 @@ async def client(test_engine):
                 await session.close()
 
     backend_app.dependency_overrides[get_db_session] = override_get_db
+
+    # Create default test organizer
+    organizer_id = "00000000-0000-0000-0000-000000000001"
+    default_user = User(
+        id=organizer_id,
+        email="organizer@example.com",
+        name="Default Organizer",
+        hashed_password="mock",
+        role="ORGANIZER",
+        is_active=True,
+    )
+    async with session_factory() as session:
+        session.add(default_user)
+        await session.commit()
+
+    backend_app.dependency_overrides[get_current_user] = lambda: default_user
+    backend_app.dependency_overrides[require_organizer] = lambda: default_user
+    backend_app.dependency_overrides[require_member] = lambda: default_user
 
     transport = ASGITransport(app=backend_app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
