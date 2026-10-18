@@ -91,8 +91,18 @@ export default function DashboardPage() {
           fetchHealth(),
         ]);
 
-        if (wList.status === 'fulfilled') setWorkshops(wList.value);
-        if (regList.status === 'fulfilled') setRegistrations(regList.value);
+        if (wList.status === 'fulfilled') {
+          setWorkshops(wList.value);
+        } else if (wList.reason?.message) {
+          showMessage(`Workshops API: ${wList.reason.message}`, true);
+        }
+
+        if (regList.status === 'fulfilled') {
+          setRegistrations(regList.value);
+        } else if (regList.reason?.message) {
+          showMessage(`Registrations API: ${regList.reason.message}`, true);
+        }
+
         if (notifData.status === 'fulfilled') setNotifications(notifData.value.items);
         if (sumData.status === 'fulfilled') setSummary(sumData.value);
         if (simData.status === 'fulfilled') setSimulator(simData.value);
@@ -105,12 +115,22 @@ export default function DashboardPage() {
           fetchHealth(),
         ]);
 
-        if (wList.status === 'fulfilled') setWorkshops(wList.value);
-        if (regList.status === 'fulfilled') setRegistrations(regList.value);
+        if (wList.status === 'fulfilled') {
+          setWorkshops(wList.value);
+        } else if (wList.reason?.message) {
+          showMessage(`Workshops API: ${wList.reason.message}`, true);
+        }
+
+        if (regList.status === 'fulfilled') {
+          setRegistrations(regList.value);
+        } else if (regList.reason?.message) {
+          showMessage(`Registrations API: ${regList.reason.message}`, true);
+        }
+
         if (healthData.status === 'fulfilled') setSystemStatus(healthData.value.status || 'healthy');
       }
     } catch (err: any) {
-      console.error('Data load error:', err);
+      showMessage(err?.message || 'Failed to load application data', true);
     }
   }, [user, selectedStatus, emailFilter]);
 

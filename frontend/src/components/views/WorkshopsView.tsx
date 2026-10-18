@@ -171,6 +171,10 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
   };
 
   const filteredWorkshops = workshops.filter((w) => {
+    // For members, strictly exclude cancelled workshops from the available list
+    if (!isOrganizer && w.status === 'CANCELLED') {
+      return false;
+    }
     const matchesSearch =
       w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (w.description && w.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -208,22 +212,30 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
 
       {/* Filter Chips & Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card border border-border rounded-lg p-3 shadow-xs">
-        {/* Google-style Filter Chips */}
-        <div className="flex items-center space-x-1.5">
-          {(['ALL', 'SCHEDULED', 'CANCELLED'] as const).map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                statusFilter === st
-                  ? 'bg-primary-surface text-primary border-primary-surface-border font-semibold shadow-2xs'
-                  : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
-            >
-              {st === 'ALL' ? 'All Workshops' : st === 'SCHEDULED' ? 'Scheduled' : 'Cancelled'}
-            </button>
-          ))}
-        </div>
+        {/* Google-style Filter Chips for Organizers */}
+        {isOrganizer ? (
+          <div className="flex items-center space-x-1.5">
+            {(['ALL', 'SCHEDULED', 'CANCELLED'] as const).map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                  statusFilter === st
+                    ? 'bg-primary-surface text-primary border-primary-surface-border font-semibold shadow-2xs'
+                    : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                {st === 'ALL' ? 'All Workshops' : st === 'SCHEDULED' ? 'Scheduled' : 'Cancelled'}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary-surface text-primary border border-primary-surface-border font-semibold">
+              Available Sessions ({filteredWorkshops.length})
+            </span>
+          </div>
+        )}
 
         {/* Functional Search Input */}
         <div className="relative">
@@ -242,21 +254,23 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
       {filteredWorkshops.length === 0 ? (
         <div className="border border-dashed border-border rounded-lg p-12 text-center bg-card/60">
           <Calendar className="w-10 h-10 mx-auto text-muted-foreground mb-3 opacity-60" />
-          <h3 className="text-sm font-semibold text-foreground">No workshops found</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            {workshops.length === 0 ? 'No workshops created yet' : 'No workshops match filter'}
+          </h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto leading-relaxed">
             {workshops.length === 0
               ? isOrganizer
-                ? 'No workshops have been scheduled yet. Click "+ New Workshop" to schedule your first event and test reliable outbox notifications.'
-                : 'No workshops have been scheduled yet. Check back soon for upcoming sessions.'
+                ? 'You have not scheduled any workshops yet. Click "Create your first workshop" to publish a session and configure capacity.'
+                : 'No workshops are currently scheduled. Check back soon for upcoming sessions.'
               : 'No workshops match the selected status or search query.'}
           </p>
           {workshops.length === 0 && isOrganizer && (
             <button
               onClick={openCreateModal}
-              className="mt-4 inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs transition-colors"
+              className="mt-4 inline-flex items-center space-x-1.5 px-4 py-2 rounded-md text-xs font-semibold bg-primary hover:bg-primary-hover text-white shadow-xs hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create First Workshop</span>
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Create your first workshop</span>
             </button>
           )}
         </div>

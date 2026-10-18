@@ -73,8 +73,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Apply subtle surface brightness offset without washing out text contrast
   useEffect(() => {
-    // Normal 1.0 means 0 offset. Range 0.9 to 1.1 scales offset between -4% and +4%
-    const offsetPercent = ((brightness - 1.0) * 40).toFixed(1);
+    // Range 0.90 to 1.10 scales surface lightness offset between -6% and +6%
+    const offsetPercent = ((brightness - 1.0) * 60).toFixed(1);
     document.documentElement.style.setProperty('--surface-offset', `${offsetPercent}%`);
     document.documentElement.style.setProperty('--brightness-value', brightness.toString());
   }, [brightness]);

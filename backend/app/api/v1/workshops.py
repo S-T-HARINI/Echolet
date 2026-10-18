@@ -62,12 +62,20 @@ async def list_workshops(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
 ) -> List[WorkshopResponse]:
-    # Determine organizer filtering
+    # Determine organizer and status filtering
     organizer_filter = None
     if current_user.is_organizer():
         if mine is not False:
             organizer_filter = current_user.id
-    # Members see all scheduled workshops (organizer_filter = None)
+    else:
+        # Members can only view SCHEDULED workshops available for registration.
+        # Cancelled workshops are strictly excluded from the default member catalog.
+        if status_filter and status_filter != "SCHEDULED":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Members are only permitted to view scheduled workshops available for booking."
+            )
+        status_filter = "SCHEDULED"
 
     items, _ = await WorkshopService.list_workshops(
         db,

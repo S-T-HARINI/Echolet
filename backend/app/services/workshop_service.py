@@ -66,6 +66,10 @@ class WorkshopService:
         query = select(Workshop)
         count_query = select(func.count(Workshop.id))
 
+        # Absolute requirement: Only workshops created by an organizer exist in the system
+        query = query.where(Workshop.organizer_id.isnot(None))
+        count_query = count_query.where(Workshop.organizer_id.isnot(None))
+
         if status:
             query = query.where(Workshop.status == status)
             count_query = count_query.where(Workshop.status == status)

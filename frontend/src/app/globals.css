@@ -12,8 +12,8 @@
     --card: 0 0% calc(100% + var(--surface-offset, 0%));                  /* #ffffff Pure white cards & dialogs */
     --card-foreground: 220 6% 13%;                                         /* #202124 */
     --sidebar: 0 0% calc(100% + var(--surface-offset, 0%));
-    --border: 216 7% 87%;                                                  /* #dadce0 Google standard border */
-    --border-subtle: 214 9% 93%;                                           /* #e8eaed Subtle divider */
+    --border: 216 7% calc(87% + var(--surface-offset, 0%));               /* #dadce0 Google standard border */
+    --border-subtle: 214 9% calc(93% + var(--surface-offset, 0%));        /* #e8eaed Subtle divider */
     --muted: 210 14% calc(95% + var(--surface-offset, 0%));               /* #f1f3f4 Google hover / secondary surface */
     --muted-foreground: 215 5% 39%;                                        /* #5f6368 Google readable secondary text */
     
@@ -52,8 +52,8 @@
     --card: 216 5% calc(18% + var(--surface-offset, 0%));                 /* #2d2f31 Google dark card surface */
     --card-foreground: 216 12% 92%;                                        /* #e8eaed */
     --sidebar: 220 6% calc(15% + var(--surface-offset, 0%));              /* #242628 */
-    --border: 218 5% 25%;                                                  /* #3c4043 Google dark border */
-    --border-subtle: 220 5% 20%;                                           /* #303134 Google dark divider */
+    --border: 218 5% calc(25% + var(--surface-offset, 0%));               /* #3c4043 Google dark border */
+    --border-subtle: 220 5% calc(20% + var(--surface-offset, 0%));        /* #303134 Google dark divider */
     --muted: 220 5% calc(22% + var(--surface-offset, 0%));                 /* #333538 Google dark hover surface */
     --muted-foreground: 217 6% 63%;                                        /* #9aa0a6 Google dark secondary text */
 
