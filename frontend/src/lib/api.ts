@@ -1,6 +1,23 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const MOCK_BASE = process.env.NEXT_PUBLIC_MOCK_SERVICE_URL || 'http://localhost:8001';
 
+// ---------------- Type Definitions ----------------
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'ORGANIZER' | 'MEMBER';
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+  message: string;
+}
+
 export interface Workshop {
   id: string;
   title: string;
@@ -11,6 +28,7 @@ export interface Workshop {
   cancelled_at?: string;
   registered_count: number;
   available_capacity: number;
+  organizer_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -79,11 +97,117 @@ export interface SimulatorStatus {
   total_deduplicated: number;
 }
 
+// ---------------- Helper Headers ----------------
+
+function getHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(extra || {}),
+  };
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('echolet_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
+
+// ---------------- Authentication APIs ----------------
+
+export async function signup(data: {
+  email: string;
+  password: string;
+  name: string;
+  role: 'ORGANIZER' | 'MEMBER';
+}): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Sign up failed');
+  }
+  const result: AuthResponse = await res.json();
+  if (typeof window !== 'undefined' && result.token) {
+    localStorage.setItem('echolet_token', result.token);
+  }
+  return result;
+}
+
+export async function login(data: {
+  email: string;
+  password: string;
+}): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Sign in failed');
+  }
+  const result: AuthResponse = await res.json();
+  if (typeof window !== 'undefined' && result.token) {
+    localStorage.setItem('echolet_token', result.token);
+  }
+  return result;
+}
+
+export async function logout(): Promise<{ message: string }> {
+  try {
+    await fetch(`${API_BASE}/api/v1/auth/logout`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include',
+    });
+  } catch (err) {
+    console.error('Logout error:', err);
+  } finally {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('echolet_token');
+    }
+  }
+  return { message: 'Logged out successfully' };
+}
+
+export async function fetchMe(): Promise<User | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
+      headers: getHeaders(),
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('echolet_token');
+      }
+      return null;
+    }
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 // ---------------- Workshop APIs ----------------
+
 export async function fetchWorkshops(status?: string): Promise<Workshop[]> {
-  const url = status ? `${API_BASE}/api/v1/workshops?status=${status}` : `${API_BASE}/api/v1/workshops`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch workshops: ${res.statusText}`);
+  const url = status
+    ? `${API_BASE}/api/v1/workshops?status=${status}`
+    : `${API_BASE}/api/v1/workshops`;
+  const res = await fetch(url, {
+    headers: getHeaders(),
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Failed to fetch workshops: ${res.statusText}`);
+  }
   return res.json();
 }
 
@@ -95,7 +219,8 @@ export async function createWorkshop(data: {
 }): Promise<Workshop> {
   const res = await fetch(`${API_BASE}/api/v1/workshops`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -108,6 +233,8 @@ export async function createWorkshop(data: {
 export async function cancelWorkshop(workshopId: string): Promise<any> {
   const res = await fetch(`${API_BASE}/api/v1/workshops/${workshopId}/cancel`, {
     method: 'POST',
+    headers: getHeaders(),
+    credentials: 'include',
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
@@ -117,13 +244,15 @@ export async function cancelWorkshop(workshopId: string): Promise<any> {
 }
 
 // ---------------- Registration APIs ----------------
+
 export async function registerMember(
   workshopId: string,
   data: { member_id: string; member_name: string; member_email: string }
 ): Promise<Registration> {
   const res = await fetch(`${API_BASE}/api/v1/workshops/${workshopId}/registrations`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -134,8 +263,14 @@ export async function registerMember(
 }
 
 export async function fetchRegistrations(workshopId: string): Promise<Registration[]> {
-  const res = await fetch(`${API_BASE}/api/v1/workshops/${workshopId}/registrations`);
-  if (!res.ok) throw new Error(`Failed to fetch registrations: ${res.statusText}`);
+  const res = await fetch(`${API_BASE}/api/v1/workshops/${workshopId}/registrations`, {
+    headers: getHeaders(),
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Failed to fetch registrations: ${res.statusText}`);
+  }
   return res.json();
 }
 
@@ -143,15 +278,28 @@ export async function fetchAllRegistrations(workshopId?: string): Promise<Global
   const url = workshopId
     ? `${API_BASE}/api/v1/registrations?workshop_id=${workshopId}`
     : `${API_BASE}/api/v1/registrations`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch all registrations: ${res.statusText}`);
+  const res = await fetch(url, {
+    headers: getHeaders(),
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Failed to fetch all registrations: ${res.statusText}`);
+  }
   return res.json();
 }
 
 // ---------------- Notification APIs ----------------
+
 export async function fetchNotificationSummary(): Promise<NotificationSummary> {
-  const res = await fetch(`${API_BASE}/api/v1/notifications/summary`);
-  if (!res.ok) throw new Error('Failed to fetch outbox summary');
+  const res = await fetch(`${API_BASE}/api/v1/notifications/summary`, {
+    headers: getHeaders(),
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Failed to fetch outbox summary');
+  }
   return res.json();
 }
 
@@ -165,12 +313,19 @@ export async function fetchNotifications(params?: {
   if (params?.recipient_email) query.append('recipient_email', params.recipient_email);
   if (params?.limit) query.append('limit', params.limit.toString());
 
-  const res = await fetch(`${API_BASE}/api/v1/notifications?${query.toString()}`);
-  if (!res.ok) throw new Error('Failed to fetch notifications');
+  const res = await fetch(`${API_BASE}/api/v1/notifications?${query.toString()}`, {
+    headers: getHeaders(),
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Failed to fetch notifications');
+  }
   return res.json();
 }
 
 // ---------------- Mock Simulator APIs ----------------
+
 export async function fetchSimulatorStatus(): Promise<SimulatorStatus> {
   const res = await fetch(`${MOCK_BASE}/api/v1/simulate/status`);
   if (!res.ok) throw new Error('Failed to fetch simulator status');
@@ -199,6 +354,8 @@ export async function resetSimulator(): Promise<SimulatorStatus> {
   if (!res.ok) throw new Error('Failed to reset simulator');
   return res.json();
 }
+
+// ---------------- Health & Diagnostics APIs ----------------
 
 export async function fetchHealth(): Promise<any> {
   const res = await fetch(`${API_BASE}/api/v1/health`);

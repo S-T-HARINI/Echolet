@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import {
   Sun,
   Moon,
@@ -14,6 +15,8 @@ import {
   Inbox,
   Cpu,
   BookOpen,
+  LogOut,
+  RotateCcw,
 } from 'lucide-react';
 
 export type NavigationTab =
@@ -47,9 +50,19 @@ export const Header: React.FC<HeaderProps> = ({
   outboxPendingCount = 0,
   simulatorMode = 'normal',
 }) => {
-  const { theme, setTheme, brightness, setBrightness } = useTheme();
+  const { theme, setTheme, brightness, setBrightness, resetBrightness } = useTheme();
+  const { user, logout } = useAuth();
 
-  const navItems: { id: NavigationTab; label: string; icon: React.ReactNode; badge?: React.ReactNode }[] = [
+  const isOrganizer = user?.role === 'ORGANIZER';
+
+  // Role-filtered navigation items
+  const allNavItems: {
+    id: NavigationTab;
+    label: string;
+    icon: React.ReactNode;
+    badge?: React.ReactNode;
+    organizerOnly?: boolean;
+  }[] = [
     {
       id: 'overview',
       label: 'Overview',
@@ -62,13 +75,14 @@ export const Header: React.FC<HeaderProps> = ({
     },
     {
       id: 'registrations',
-      label: 'Registrations',
+      label: isOrganizer ? 'Registrations' : 'My Registrations',
       icon: <Users className="w-4 h-4" />,
     },
     {
       id: 'outbox',
       label: 'Transactional Outbox',
       icon: <Inbox className="w-4 h-4" />,
+      organizerOnly: true,
       badge:
         outboxPendingCount > 0 ? (
           <span className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-status-warning-bg text-status-warning-text border border-status-warning-border">
@@ -80,6 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
       id: 'simulator',
       label: 'Failure Simulator',
       icon: <Cpu className="w-4 h-4" />,
+      organizerOnly: true,
       badge:
         simulatorMode && simulatorMode !== 'normal' ? (
           <span className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-status-danger-bg text-status-danger-text border border-status-danger-border">
@@ -94,9 +109,21 @@ export const Header: React.FC<HeaderProps> = ({
     },
   ];
 
+  const visibleNavItems = allNavItems.filter((item) => !item.organizerOnly || isOrganizer);
+
+  // User initials
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .map((p) => p[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : 'U';
+
   return (
     <header className="border-b border-border bg-card sticky top-0 z-30 shadow-[0_1px_2px_0_rgba(60,64,67,0.06)]">
-      {/* Top Header Bar: Google style compact branding and actions */}
+      {/* Top Header Bar */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         {/* Left: Brand & Status */}
         <div className="flex items-center space-x-3.5">
@@ -132,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Controls */}
+        {/* Right: Controls & User Profile */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           {/* Auto Refresh & Manual Refresh */}
           <div className="flex items-center space-x-1 border border-border rounded-md px-1.5 py-0.5 bg-muted/60 text-xs">
@@ -157,15 +184,15 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Brightness Adjustment Slider */}
+          {/* Brightness Adjustment Slider (90% - 110%) with Reset Button */}
           <div className="hidden lg:flex items-center space-x-2 border border-border rounded-md px-2.5 py-1 bg-muted/40 text-xs">
             <Sliders className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground font-medium">Bright</span>
             <input
               type="range"
-              min="0.8"
-              max="1.2"
-              step="0.05"
+              min="0.9"
+              max="1.1"
+              step="0.01"
               value={brightness}
               onChange={(e) => setBrightness(parseFloat(e.target.value))}
               className="w-16 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
@@ -174,6 +201,15 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-[11px] text-muted-foreground font-mono w-7">
               {Math.round(brightness * 100)}%
             </span>
+            {Math.round(brightness * 100) !== 100 && (
+              <button
+                onClick={resetBrightness}
+                className="p-1 rounded text-muted-foreground hover:text-primary transition-colors"
+                title="Reset brightness to 100%"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </button>
+            )}
           </div>
 
           {/* Theme Selector (Light, Dark, System) */}
@@ -215,14 +251,49 @@ export const Header: React.FC<HeaderProps> = ({
               <Laptop className="w-4 h-4" />
             </button>
           </div>
+
+          {/* User Account / Profile & Sign Out */}
+          {user && (
+            <div className="flex items-center space-x-2 pl-2 border-l border-border-subtle">
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center text-xs font-bold">
+                  {initials}
+                </div>
+                <div className="hidden sm:flex flex-col text-left">
+                  <span className="text-xs font-medium text-foreground leading-none">
+                    {user.name}
+                  </span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span
+                      className={`text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded ${
+                        isOrganizer
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
+                      }`}
+                    >
+                      {user.role}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={logout}
+                className="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                title="Sign out of account"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Navigation Bar: Google Workspace / Google Calendar tab style */}
+      {/* Navigation Bar */}
       <div className="border-t border-border-subtle bg-card">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <nav className="flex space-x-1 sm:space-x-2 overflow-x-auto text-sm">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
                 <button

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import {
   Workshop,
   Registration,
@@ -37,6 +38,9 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
   showMessage,
   showCreateModalInitial = false,
 }) => {
+  const { user } = useAuth();
+  const isOrganizer = user?.role === 'ORGANIZER';
+
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(showCreateModalInitial);
   const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
@@ -184,18 +188,22 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
             Workshops
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Schedule workshops, enforce atomic capacity limits under concurrency, and track registrations.
+            {isOrganizer
+              ? 'Schedule workshops, enforce atomic capacity limits under concurrency, and track registrations.'
+              : 'Browse scheduled engineering workshops and reserve your seat with instant confirmation.'}
           </p>
         </div>
-        <div>
-          <button
-            onClick={openCreateModal}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-xs hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>New Workshop</span>
-          </button>
-        </div>
+        {isOrganizer && (
+          <div>
+            <button
+              onClick={openCreateModal}
+              className="inline-flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-xs hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>New Workshop</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filter Chips & Search Bar */}
@@ -237,10 +245,12 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
           <h3 className="text-sm font-semibold text-foreground">No workshops found</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto leading-relaxed">
             {workshops.length === 0
-              ? 'No workshops have been scheduled yet. Click "+ New Workshop" to schedule your first event and test reliable outbox notifications.'
+              ? isOrganizer
+                ? 'No workshops have been scheduled yet. Click "+ New Workshop" to schedule your first event and test reliable outbox notifications.'
+                : 'No workshops have been scheduled yet. Check back soon for upcoming sessions.'
               : 'No workshops match the selected status or search query.'}
           </p>
-          {workshops.length === 0 && (
+          {workshops.length === 0 && isOrganizer && (
             <button
               onClick={openCreateModal}
               className="mt-4 inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs transition-colors"
@@ -260,7 +270,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
             return (
               <div
                 key={w.id}
-                className="bg-card border border-border rounded-lg p-5 flex flex-col justify-between hover:border-primary/40 hover:shadow-xs transition-all duration-150"
+                className="google-card bg-card border border-border rounded-xl p-5 flex flex-col justify-between"
               >
                 <div>
                   {/* Card Title & Status Badge */}
@@ -337,6 +347,9 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                     <button
                       onClick={() => {
                         setSelectedWorkshop(w);
+                        setMemberName(user?.name || '');
+                        setMemberEmail(user?.email || '');
+                        setMemberId(user?.id ? `mem_${user.id.slice(0, 8)}` : `mem_${Math.random().toString(36).substring(2, 7)}`);
                         setShowRegisterModal(true);
                       }}
                       disabled={isCancelled || isFull}
@@ -355,7 +368,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                     </button>
                   </div>
 
-                  {!isCancelled && (
+                  {!isCancelled && isOrganizer && (
                     <button
                       onClick={() => handleCancelWorkshop(w)}
                       className="text-xs font-medium text-status-danger-text hover:underline transition-colors px-1"

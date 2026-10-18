@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import {
   Workshop,
   GlobalRegistrationItem,
@@ -30,6 +31,9 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
   onRefresh,
   showMessage,
 }) => {
+  const { user } = useAuth();
+  const isOrganizer = user?.role === 'ORGANIZER';
+
   const [selectedWorkshopId, setSelectedWorkshopId] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -49,6 +53,9 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
     if (availableWorkshops.length > 0) {
       setFormWorkshopId(availableWorkshops[0].id);
     }
+    setMemberName(user?.name || '');
+    setMemberEmail(user?.email || '');
+    setMemberId(user?.id ? `mem_${user.id.slice(0, 8)}` : `mem_${Math.random().toString(36).substring(2, 7)}`);
     setShowRegisterModal(true);
   };
 
@@ -95,10 +102,12 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
         <div>
           <h1 className="text-2xl font-semibold text-foreground tracking-tight">
-            Registrations
+            {isOrganizer ? 'Workshop Registrations' : 'My Registrations'}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Confirmed member registrations across all scheduled workshop events.
+            {isOrganizer
+              ? 'Confirmed member registrations across workshops you manage.'
+              : 'Your active workshop bookings and outbox confirmation statuses.'}
           </p>
         </div>
         <div>
@@ -108,7 +117,7 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
             className="inline-flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             <UserPlus className="w-4 h-4 stroke-[2.5]" />
-            <span>Register Member</span>
+            <span>{isOrganizer ? 'Register Attendee' : 'Register for Workshop'}</span>
           </button>
         </div>
       </div>
@@ -147,7 +156,7 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
       </div>
 
       {/* Registrations Table or Empty State */}
-      <div className="border border-border rounded-lg overflow-hidden bg-card shadow-xs">
+      <div className="google-card border border-border rounded-xl overflow-hidden bg-card shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-muted/50 border-b border-border text-muted-foreground font-medium text-[11px]">
@@ -167,7 +176,9 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
                     <p className="text-foreground font-semibold text-xs">No registrations found</p>
                     <p className="text-muted-foreground text-xs mt-1 max-w-sm mx-auto leading-relaxed">
                       {registrations.length === 0
-                        ? 'No members have registered for any workshops yet. Use the Register Member button to add attendees.'
+                        ? isOrganizer
+                          ? 'No attendees have registered for your workshops yet.'
+                          : 'You have not registered for any workshops yet. Discover sessions in the Workshops tab!'
                         : 'No registrations match your current workshop or search filter.'}
                     </p>
                   </td>

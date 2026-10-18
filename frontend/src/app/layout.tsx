@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '../context/ThemeContext';
+import { AuthProvider } from '../context/AuthContext';
 
 export const metadata: Metadata = {
   title: 'EchoLet — Workshop Registration & Reliable Notification System',
@@ -18,9 +19,16 @@ const themeScript = `
         document.documentElement.classList.remove('dark');
       }
       var savedBrightness = localStorage.getItem('echolet_brightness');
+      var brightness = 1.0;
       if (savedBrightness) {
-        document.documentElement.style.setProperty('--brightness', savedBrightness);
+        var parsed = parseFloat(savedBrightness);
+        if (!isNaN(parsed) && parsed >= 0.9 && parsed <= 1.1) {
+          brightness = parsed;
+        }
       }
+      var offsetPercent = ((brightness - 1.0) * 40).toFixed(1);
+      document.documentElement.style.setProperty('--surface-offset', offsetPercent + '%');
+      document.documentElement.style.setProperty('--brightness-value', brightness.toString());
     } catch (e) {}
   })();
 `;
@@ -36,7 +44,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased selection:bg-foreground selection:text-background">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

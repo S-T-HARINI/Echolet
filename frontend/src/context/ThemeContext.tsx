@@ -2,13 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   brightness: number;
   setBrightness: (brightness: number) => void;
+  resetBrightness: () => void;
   actualTheme: 'light' | 'dark';
 }
 
@@ -29,10 +30,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       setThemeState('light');
     }
+
     if (savedBrightness) {
       const parsed = parseFloat(savedBrightness);
-      if (!isNaN(parsed) && parsed >= 0.7 && parsed <= 1.3) {
+      if (!isNaN(parsed) && parsed >= 0.9 && parsed <= 1.1) {
         setBrightnessState(parsed);
+      } else {
+        setBrightnessState(1.0);
       }
     }
   }, []);
@@ -67,9 +71,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => mediaQuery.removeEventListener('change', handler);
   }, [theme]);
 
-  // Apply brightness filter variable
+  // Apply subtle surface brightness offset without washing out text contrast
   useEffect(() => {
-    document.documentElement.style.setProperty('--brightness', brightness.toString());
+    // Normal 1.0 means 0 offset. Range 0.9 to 1.1 scales offset between -4% and +4%
+    const offsetPercent = ((brightness - 1.0) * 40).toFixed(1);
+    document.documentElement.style.setProperty('--surface-offset', `${offsetPercent}%`);
+    document.documentElement.style.setProperty('--brightness-value', brightness.toString());
   }, [brightness]);
 
   const setTheme = (newTheme: ThemeMode) => {
@@ -78,14 +85,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setBrightness = (newBrightness: number) => {
-    const clamped = Math.min(1.3, Math.max(0.7, newBrightness));
+    // Clamp between 0.90 (90%) and 1.10 (110%)
+    const clamped = Math.min(1.1, Math.max(0.9, newBrightness));
     setBrightnessState(clamped);
     localStorage.setItem('echolet_brightness', clamped.toString());
   };
 
+  const resetBrightness = () => {
+    setBrightnessState(1.0);
+    localStorage.setItem('echolet_brightness', '1.0');
+  };
+
   return (
     <ThemeContext.Provider
-      value={{ theme, setTheme, brightness, setBrightness, actualTheme }}
+      value={{
+        theme,
+        setTheme,
+        brightness,
+        setBrightness,
+        resetBrightness,
+        actualTheme,
+      }}
     >
       {children}
     </ThemeContext.Provider>
