@@ -54,11 +54,31 @@ app.add_middleware(
 app.include_router(api_v1_router)
 
 
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+
+
 @app.exception_handler(EchoLetException)
 async def echolet_exception_handler(request: Request, exc: EchoLetException):
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.message, "error_type": exc.__class__.__name__},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    for err in exc.errors():
+        loc_parts = [str(p) for p in err.get("loc", []) if p != "body"]
+        field = " -> ".join(loc_parts)
+        raw_msg = str(err.get("msg", "Invalid value"))
+        clean_msg = raw_msg.replace("Value error, ", "").strip()
+        errors.append(f"{field}: {clean_msg}" if field else clean_msg)
+    detail_str = "; ".join(errors) or "Request validation failed."
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": detail_str, "errors": jsonable_encoder(exc.errors())},
     )
 
 

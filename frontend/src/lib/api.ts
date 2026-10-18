@@ -97,6 +97,53 @@ export interface SimulatorStatus {
   total_deduplicated: number;
 }
 
+// ---------------- Error Formatter ----------------
+
+export function formatApiError(data: any, fallback: string = 'Operation failed'): string {
+  if (!data) return fallback;
+  if (typeof data === 'string') return data;
+  if (typeof data.detail === 'string') return data.detail;
+  if (Array.isArray(data.detail)) {
+    return data.detail
+      .map((item: any) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          const loc = Array.isArray(item.loc)
+            ? item.loc.filter((part: any) => part !== 'body').join('.')
+            : '';
+          const msg = item.msg || JSON.stringify(item);
+          return loc ? `${loc}: ${msg}` : msg;
+        }
+        return String(item);
+      })
+      .join('; ');
+  }
+  if (Array.isArray(data.errors)) {
+    return data.errors
+      .map((item: any) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          const loc = Array.isArray(item.loc)
+            ? item.loc.filter((part: any) => part !== 'body').join('.')
+            : '';
+          const msg = item.msg || JSON.stringify(item);
+          return loc ? `${loc}: ${msg}` : msg;
+        }
+        return String(item);
+      })
+      .join('; ');
+  }
+  if (data.detail && typeof data.detail === 'object') {
+    try {
+      return JSON.stringify(data.detail);
+    } catch {
+      return fallback;
+    }
+  }
+  if (typeof data.message === 'string') return data.message;
+  return fallback;
+}
+
 // ---------------- Helper Headers ----------------
 
 function getHeaders(extra?: Record<string, string>): Record<string, string> {
@@ -129,7 +176,7 @@ export async function signup(data: {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Sign up failed');
+    throw new Error(formatApiError(err, 'Sign up failed'));
   }
   const result: AuthResponse = await res.json();
   if (typeof window !== 'undefined' && result.token) {
@@ -150,7 +197,7 @@ export async function login(data: {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Sign in failed');
+    throw new Error(formatApiError(err, 'Sign in failed'));
   }
   const result: AuthResponse = await res.json();
   if (typeof window !== 'undefined' && result.token) {
@@ -206,7 +253,7 @@ export async function fetchWorkshops(status?: string): Promise<Workshop[]> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || `Failed to fetch workshops: ${res.statusText}`);
+    throw new Error(formatApiError(err, `Failed to fetch workshops: ${res.statusText}`));
   }
   return res.json();
 }
@@ -225,7 +272,7 @@ export async function createWorkshop(data: {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Failed to create workshop');
+    throw new Error(formatApiError(err, 'Failed to create workshop'));
   }
   return res.json();
 }
@@ -238,7 +285,7 @@ export async function cancelWorkshop(workshopId: string): Promise<any> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Failed to cancel workshop');
+    throw new Error(formatApiError(err, 'Failed to cancel workshop'));
   }
   return res.json();
 }
@@ -257,7 +304,7 @@ export async function registerMember(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Registration failed');
+    throw new Error(formatApiError(err, 'Registration failed'));
   }
   return res.json();
 }
@@ -269,7 +316,7 @@ export async function fetchRegistrations(workshopId: string): Promise<Registrati
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || `Failed to fetch registrations: ${res.statusText}`);
+    throw new Error(formatApiError(err, `Failed to fetch registrations: ${res.statusText}`));
   }
   return res.json();
 }
@@ -284,7 +331,7 @@ export async function fetchAllRegistrations(workshopId?: string): Promise<Global
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || `Failed to fetch all registrations: ${res.statusText}`);
+    throw new Error(formatApiError(err, `Failed to fetch all registrations: ${res.statusText}`));
   }
   return res.json();
 }
@@ -298,7 +345,7 @@ export async function fetchNotificationSummary(): Promise<NotificationSummary> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Failed to fetch outbox summary');
+    throw new Error(formatApiError(err, 'Failed to fetch outbox summary'));
   }
   return res.json();
 }
@@ -319,7 +366,7 @@ export async function fetchNotifications(params?: {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Failed to fetch notifications');
+    throw new Error(formatApiError(err, 'Failed to fetch notifications'));
   }
   return res.json();
 }

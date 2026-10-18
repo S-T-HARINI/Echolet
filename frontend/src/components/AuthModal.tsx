@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { X, Lock, Mail, User as UserIcon, Shield, Sparkles, Check, AlertCircle } from 'lucide-react';
+import { X, Lock, Mail, User as UserIcon, Check, AlertCircle } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -13,13 +13,13 @@ interface AuthModalProps {
 export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModalProps) {
   const { login, signup, error, clearError } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
-  
+
   // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<'ORGANIZER' | 'MEMBER'>('MEMBER');
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -29,26 +29,64 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
     e.preventDefault();
     setLocalError(null);
     clearError();
+
+    const cleanEmail = email.trim();
+    const cleanPassword = password;
+    const cleanName = name.trim();
+
+    if (!cleanEmail) {
+      setLocalError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!cleanPassword) {
+      setLocalError('Please enter your password.');
+      return;
+    }
+
+    if (mode === 'signup') {
+      if (!cleanName || cleanName.length < 2) {
+        setLocalError('Please enter your full name (minimum 2 characters).');
+        return;
+      }
+      if (cleanPassword.length < 8) {
+        setLocalError('Password must be at least 8 characters long.');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
       if (mode === 'signin') {
-        await login({ email, password });
+        await login({ email: cleanEmail, password: cleanPassword });
       } else {
-        if (!name.trim()) {
-          setLocalError('Please enter your full name');
-          setIsSubmitting(false);
-          return;
-        }
-        await signup({ email, password, name, role });
+        await signup({
+          email: cleanEmail,
+          password: cleanPassword,
+          name: cleanName,
+          role,
+        });
       }
       onClose();
     } catch (err: any) {
-      setLocalError(err.message || 'Authentication failed');
+      const msg = typeof err?.message === 'string' && err.message
+        ? err.message
+        : typeof err === 'string'
+        ? err
+        : 'Authentication failed. Please check your details.';
+      setLocalError(msg);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const rawError = localError || error;
+  const errorText = typeof rawError === 'string'
+    ? rawError
+    : rawError && typeof rawError === 'object'
+    ? (rawError as any).detail || (rawError as any).message || JSON.stringify(rawError)
+    : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -67,13 +105,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
                 {mode === 'signin' ? 'Sign in to EchoLet' : 'Create an EchoLet Account'}
               </h2>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Reliable Workshop Registration & Outbox Dispatch
+                Reliable Workshop Registration &amp; Outbox Dispatch
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-full transition-colors"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -117,10 +156,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
 
         {/* Form body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {(localError || error) && (
+          {errorText && (
             <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[hsl(var(--status-danger-bg))] border border-[hsl(var(--status-danger-border))] text-[hsl(var(--status-danger-text))] text-xs leading-relaxed animate-in fade-in">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{localError || error}</span>
+              <span>{errorText}</span>
             </div>
           )}
 
@@ -161,15 +200,22 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[hsl(var(--foreground))] mb-1.5">
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-[hsl(var(--foreground))]">
+                Password
+              </label>
+              {mode === 'signup' && (
+                <span className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                  Min. 8 characters
+                </span>
+              )}
+            </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-[hsl(var(--muted-foreground))] absolute left-3 top-2.5" />
               <input
                 type="password"
                 required
-                minLength={6}
+                minLength={mode === 'signup' ? 8 : 1}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -198,7 +244,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
                     {role === 'MEMBER' && <Check className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />}
                   </div>
                   <p className="text-[11px] text-[hsl(var(--muted-foreground))] leading-tight">
-                    Browse workshops & register seats.
+                    Browse workshops &amp; register seats.
                   </p>
                 </button>
 
@@ -216,7 +262,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
                     {role === 'ORGANIZER' && <Check className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />}
                   </div>
                   <p className="text-[11px] text-[hsl(var(--muted-foreground))] leading-tight">
-                    Create workshops & view outbox logs.
+                    Create workshops &amp; view outbox logs.
                   </p>
                 </button>
               </div>
