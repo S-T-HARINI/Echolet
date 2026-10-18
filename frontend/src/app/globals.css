@@ -6,15 +6,16 @@
   :root {
     /* Google Material Light Mode Palette */
     /* Clean white canvas, Google dark charcoal text, subtle light grey borders */
-    --background: 210 20% 98%;          /* #f8f9fa Google page background */
-    --foreground: 220 6% 13%;           /* #202124 Google dark charcoal primary text */
-    --card: 0 0% 100%;                  /* #ffffff Pure white cards & dialogs */
-    --card-foreground: 220 6% 13%;      /* #202124 */
-    --sidebar: 0 0% 100%;
-    --border: 216 7% 87%;               /* #dadce0 Google standard border */
-    --border-subtle: 214 9% 93%;        /* #e8eaed Subtle divider */
-    --muted: 210 14% 95%;               /* #f1f3f4 Google hover / secondary surface */
-    --muted-foreground: 215 5% 39%;     /* #5f6368 Google readable secondary text */
+    --surface-offset: 0%;
+    --background: 210 20% calc(98% + var(--surface-offset, 0%));          /* #f8f9fa Google page background */
+    --foreground: 220 6% 13%;                                              /* #202124 Google dark charcoal primary text */
+    --card: 0 0% calc(100% + var(--surface-offset, 0%));                  /* #ffffff Pure white cards & dialogs */
+    --card-foreground: 220 6% 13%;                                         /* #202124 */
+    --sidebar: 0 0% calc(100% + var(--surface-offset, 0%));
+    --border: 216 7% 87%;                                                  /* #dadce0 Google standard border */
+    --border-subtle: 214 9% 93%;                                           /* #e8eaed Subtle divider */
+    --muted: 210 14% calc(95% + var(--surface-offset, 0%));               /* #f1f3f4 Google hover / secondary surface */
+    --muted-foreground: 215 5% 39%;                                        /* #5f6368 Google readable secondary text */
     
     /* Google Blue primary accents */
     --primary: 217 89% 51%;             /* #1a73e8 Google Blue 600 */
@@ -46,15 +47,15 @@
   .dark {
     /* Google Material Dark Mode Palette */
     /* Neutral charcoal #202124 surfaces, light readable text #e8eaed, no purple/neon */
-    --background: 220 6% 13%;           /* #202124 Google dark canvas */
-    --foreground: 216 12% 92%;          /* #e8eaed Google dark primary text */
-    --card: 216 5% 18%;                 /* #2d2f31 Google dark card surface */
-    --card-foreground: 216 12% 92%;     /* #e8eaed */
-    --sidebar: 220 6% 15%;              /* #242628 */
-    --border: 218 5% 25%;               /* #3c4043 Google dark border */
-    --border-subtle: 220 5% 20%;        /* #303134 Google dark divider */
-    --muted: 220 5% 22%;                /* #333538 Google dark hover surface */
-    --muted-foreground: 217 6% 63%;     /* #9aa0a6 Google dark secondary text */
+    --background: 220 6% calc(13% + var(--surface-offset, 0%));           /* #202124 Google dark canvas */
+    --foreground: 216 12% 92%;                                             /* #e8eaed Google dark primary text */
+    --card: 216 5% calc(18% + var(--surface-offset, 0%));                 /* #2d2f31 Google dark card surface */
+    --card-foreground: 216 12% 92%;                                        /* #e8eaed */
+    --sidebar: 220 6% calc(15% + var(--surface-offset, 0%));              /* #242628 */
+    --border: 218 5% 25%;                                                  /* #3c4043 Google dark border */
+    --border-subtle: 220 5% 20%;                                           /* #303134 Google dark divider */
+    --muted: 220 5% calc(22% + var(--surface-offset, 0%));                 /* #333538 Google dark hover surface */
+    --muted-foreground: 217 6% 63%;                                        /* #9aa0a6 Google dark secondary text */
 
     /* Google Blue in dark mode */
     --primary: 217 89% 76%;             /* #8ab4f8 Google Blue dark */
