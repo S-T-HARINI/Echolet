@@ -4,6 +4,7 @@ from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, select
+from sqlalchemy.exc import OperationalError
 from mock_service.app.config import mock_settings
 from mock_service.app.database import (
     MockDelivery,
@@ -24,6 +25,13 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] mock_service: %(message)s",
 )
 logger = logging.getLogger("mock_service")
+
+
+async def ensure_tables_exist() -> None:
+    try:
+        await init_mock_db()
+    except Exception as exc:
+        logger.error("Failed to ensure mock tables exist: %s", exc)
 
 
 @asynccontextmanager
@@ -67,27 +75,44 @@ async def deliver_notification(payload: NotificationRequest) -> NotificationDeli
     )
 
     # 1. First, check receiver-side idempotency storage
-    async with MockSessionLocal() as session:
-        stmt = select(MockDelivery).where(MockDelivery.idempotency_key == payload.idempotency_key)
-        result = await session.execute(stmt)
-        existing_delivery = result.scalar_one_or_none()
+    existing_delivery = None
+    try:
+        async with MockSessionLocal() as session:
+            stmt = select(MockDelivery).where(MockDelivery.idempotency_key == payload.idempotency_key)
+            result = await session.execute(stmt)
+            existing_delivery = result.scalar_one_or_none()
+    except OperationalError as exc:
+        if "no such table" in str(exc).lower():
+            logger.warning("Mock database table missing, initializing schema automatically...")
+            await ensure_tables_exist()
+            async with MockSessionLocal() as session:
+                stmt = select(MockDelivery).where(MockDelivery.idempotency_key == payload.idempotency_key)
+                result = await session.execute(stmt)
+                existing_delivery = result.scalar_one_or_none()
+        else:
+            raise
 
-        if existing_delivery:
-            existing_delivery.attempt_seen_count += 1
-            await session.commit()
-            simulator.total_deduplicated += 1
-            logger.info(
-                "Idempotency hit! Notification '%s' already recorded as delivered. Returning confirmed response.",
-                payload.idempotency_key,
-            )
-            return NotificationDeliveryResponse(
-                status="delivered",
-                delivery_id=existing_delivery.id,
-                idempotency_key=existing_delivery.idempotency_key,
-                idempotent_replay=True,
-                delivered_at=existing_delivery.delivered_at,
-                message="Notification already delivered previously (idempotent deduplication).",
-            )
+    if existing_delivery:
+        async with MockSessionLocal() as session:
+            stmt = select(MockDelivery).where(MockDelivery.idempotency_key == payload.idempotency_key)
+            result = await session.execute(stmt)
+            active_delivery = result.scalar_one_or_none()
+            if active_delivery:
+                active_delivery.attempt_seen_count += 1
+                await session.commit()
+        simulator.total_deduplicated += 1
+        logger.info(
+            "Idempotency hit! Notification '%s' already recorded as delivered. Returning confirmed response.",
+            payload.idempotency_key,
+        )
+        return NotificationDeliveryResponse(
+            status="delivered",
+            delivery_id=existing_delivery.id,
+            idempotency_key=existing_delivery.idempotency_key,
+            idempotent_replay=True,
+            delivered_at=existing_delivery.delivered_at,
+            message="Notification already delivered previously (idempotent deduplication).",
+        )
 
     # 2. Evaluate simulated failures/delays BEFORE persisting delivery
     try:
@@ -107,19 +132,38 @@ async def deliver_notification(payload: NotificationRequest) -> NotificationDeli
 
     # 3. If no failure occurred, persist delivery record in durable storage
     now = utc_now()
-    async with MockSessionLocal() as session:
-        delivery = MockDelivery(
-            idempotency_key=payload.idempotency_key,
-            recipient_email=payload.recipient_email,
-            recipient_name=payload.recipient_name,
-            event_type=payload.event_type,
-            payload=payload.payload,
-            attempt_seen_count=1,
-            delivered_at=now,
-        )
-        session.add(delivery)
-        await session.commit()
-        await session.refresh(delivery)
+    try:
+        async with MockSessionLocal() as session:
+            delivery = MockDelivery(
+                idempotency_key=payload.idempotency_key,
+                recipient_email=payload.recipient_email,
+                recipient_name=payload.recipient_name,
+                event_type=payload.event_type,
+                payload=payload.payload,
+                attempt_seen_count=1,
+                delivered_at=now,
+            )
+            session.add(delivery)
+            await session.commit()
+            await session.refresh(delivery)
+    except OperationalError as exc:
+        if "no such table" in str(exc).lower():
+            await ensure_tables_exist()
+            async with MockSessionLocal() as session:
+                delivery = MockDelivery(
+                    idempotency_key=payload.idempotency_key,
+                    recipient_email=payload.recipient_email,
+                    recipient_name=payload.recipient_name,
+                    event_type=payload.event_type,
+                    payload=payload.payload,
+                    attempt_seen_count=1,
+                    delivered_at=now,
+                )
+                session.add(delivery)
+                await session.commit()
+                await session.refresh(delivery)
+        else:
+            raise
 
     simulator.total_delivered += 1
     logger.info("Successfully delivered and recorded notification id=%s", delivery.id)
@@ -141,36 +185,47 @@ async def list_deliveries(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
-    async with MockSessionLocal() as session:
-        query = select(MockDelivery)
-        if recipient_email:
-            query = query.where(MockDelivery.recipient_email == recipient_email)
-        if idempotency_key:
-            query = query.where(MockDelivery.idempotency_key == idempotency_key)
+    try:
+        async with MockSessionLocal() as session:
+            query = select(MockDelivery)
+            if recipient_email:
+                query = query.where(MockDelivery.recipient_email == recipient_email)
+            if idempotency_key:
+                query = query.where(MockDelivery.idempotency_key == idempotency_key)
 
-        query = query.order_by(MockDelivery.delivered_at.desc()).limit(limit).offset(offset)
-        res = await session.execute(query)
-        deliveries = res.scalars().all()
+            query = query.order_by(MockDelivery.delivered_at.desc()).limit(limit).offset(offset)
+            res = await session.execute(query)
+            deliveries = res.scalars().all()
 
-        count_stmt = select(func.count(MockDelivery.id))
-        total = (await session.execute(count_stmt)).scalar() or 0
+            count_stmt = select(func.count(MockDelivery.id))
+            if recipient_email:
+                count_stmt = count_stmt.where(MockDelivery.recipient_email == recipient_email)
+            if idempotency_key:
+                count_stmt = count_stmt.where(MockDelivery.idempotency_key == idempotency_key)
+            total = (await session.execute(count_stmt)).scalar() or 0
+    except OperationalError as exc:
+        if "no such table" in str(exc).lower():
+            await ensure_tables_exist()
+            deliveries, total = [], 0
+        else:
+            raise
 
-        return {
-            "total": total,
-            "items": [
-                {
-                    "id": d.id,
-                    "idempotency_key": d.idempotency_key,
-                    "recipient_email": d.recipient_email,
-                    "recipient_name": d.recipient_name,
-                    "event_type": d.event_type,
-                    "payload": d.payload,
-                    "attempt_seen_count": d.attempt_seen_count,
-                    "delivered_at": d.delivered_at,
-                }
-                for d in deliveries
-            ],
-        }
+    return {
+        "total": total,
+        "items": [
+            {
+                "id": d.id,
+                "idempotency_key": d.idempotency_key,
+                "recipient_email": d.recipient_email,
+                "recipient_name": d.recipient_name,
+                "event_type": d.event_type,
+                "payload": d.payload,
+                "attempt_seen_count": d.attempt_seen_count,
+                "delivered_at": d.delivered_at,
+            }
+            for d in deliveries
+        ],
+    }
 
 
 @app.post("/api/v1/simulate/configure", summary="Configure failure simulation")

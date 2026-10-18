@@ -62,14 +62,41 @@ async def test_session(test_session_factory):
 
 @pytest_asyncio.fixture(scope="function")
 async def mock_service_db():
-    async with mock_engine.begin() as conn:
-        await conn.run_sync(MockBase.metadata.drop_all)
+    temp_dir = tempfile.mkdtemp()
+    test_db_path = os.path.join(temp_dir, "test_mock.db")
+    test_mock_engine = create_async_engine(f"sqlite+aiosqlite:///{test_db_path}", echo=False)
+    test_mock_session_factory = async_sessionmaker(
+        bind=test_mock_engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    async with test_mock_engine.begin() as conn:
         await conn.run_sync(MockBase.metadata.create_all)
+
+    import mock_service.app.database as db_mod
+    import mock_service.app.main as main_mod
+
+    orig_engine = db_mod.mock_engine
+    orig_session_local_db = db_mod.MockSessionLocal
+    orig_session_local_main = main_mod.MockSessionLocal
+
+    db_mod.mock_engine = test_mock_engine
+    db_mod.MockSessionLocal = test_mock_session_factory
+    main_mod.MockSessionLocal = test_mock_session_factory
+
     simulator.reset()
     yield
     simulator.reset()
-    async with mock_engine.begin() as conn:
-        await conn.run_sync(MockBase.metadata.drop_all)
+
+    db_mod.mock_engine = orig_engine
+    db_mod.MockSessionLocal = orig_session_local_db
+    main_mod.MockSessionLocal = orig_session_local_main
+
+    await test_mock_engine.dispose()
+    try:
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True)
+    except Exception:
+        pass
 
 
 from backend.app.auth.dependencies import get_current_user, require_member, require_organizer
