@@ -118,7 +118,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
           <button
             onClick={handleReset}
             disabled={isUpdating}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-md text-xs font-medium border border-border bg-card hover:bg-muted text-foreground transition-colors disabled:opacity-50"
+            className="btn-google-secondary px-3.5 py-1.5 text-xs font-medium inline-flex items-center space-x-1.5"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset to Normal</span>
@@ -291,7 +291,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
           <button
             type="submit"
             disabled={isUpdating}
-            className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs disabled:opacity-50 transition-colors whitespace-nowrap"
+            className="btn-google-primary px-4 py-1.5 text-xs font-semibold whitespace-nowrap"
           >
             Add Recipient
           </button>

@@ -302,7 +302,7 @@ export const OutboxView: React.FC<OutboxViewProps> = ({
             <div className="pt-3 border-t border-border flex items-center justify-end">
               <button
                 onClick={() => setInspectItem(null)}
-                className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs transition-colors"
+                className="btn-google-primary px-4 py-1.5 text-xs font-medium"
               >
                 Close
               </button>

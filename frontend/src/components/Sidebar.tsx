@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { BrandLogo } from './BrandLogo';
 import {
   LayoutDashboard,
   Calendar,
@@ -9,6 +10,7 @@ import {
   Inbox,
   Cpu,
   BookOpen,
+  Settings,
   LogOut,
   X,
   ShieldCheck,
@@ -21,7 +23,8 @@ export type NavigationTab =
   | 'registrations'
   | 'outbox'
   | 'simulator'
-  | 'architecture';
+  | 'architecture'
+  | 'settings';
 
 interface SidebarProps {
   activeTab: NavigationTab;
@@ -43,31 +46,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { user, logout } = useAuth();
   const isOrganizer = user?.role === 'ORGANIZER';
 
+  // Role-specific navigation items:
+  // - Members: Overview, Browse Workshops, My Registrations, Account Settings
+  // - Organizers: Overview, Manage Workshops, Registrations, Transactional Outbox, Failure Simulator, System Architecture, Account Settings
   const navItems: {
     id: NavigationTab;
     label: string;
     icon: React.ReactNode;
     badge?: React.ReactNode;
     organizerOnly?: boolean;
-    section: 'main' | 'operations' | 'resources';
+    section: 'workspace' | 'operations' | 'account';
   }[] = [
     {
       id: 'overview',
       label: 'Overview',
       icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-      section: 'main',
+      section: 'workspace',
     },
     {
       id: 'workshops',
-      label: 'Workshops',
+      label: isOrganizer ? 'Manage Workshops' : 'Browse Workshops',
       icon: <Calendar className="w-4 h-4 shrink-0" />,
-      section: 'main',
+      section: 'workspace',
     },
     {
       id: 'registrations',
       label: isOrganizer ? 'Registrations' : 'My Registrations',
       icon: <Users className="w-4 h-4 shrink-0" />,
-      section: 'main',
+      section: 'workspace',
     },
     {
       id: 'outbox',
@@ -99,15 +105,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'architecture',
       label: 'System Architecture',
       icon: <BookOpen className="w-4 h-4 shrink-0" />,
-      section: 'resources',
+      organizerOnly: true, // Strictly hidden from members
+      section: 'operations',
+    },
+    {
+      id: 'settings',
+      label: 'Account Settings',
+      icon: <Settings className="w-4 h-4 shrink-0" />,
+      section: 'account',
     },
   ];
 
   const visibleItems = navItems.filter((item) => !item.organizerOnly || isOrganizer);
 
-  const mainItems = visibleItems.filter((i) => i.section === 'main');
-  const opItems = visibleItems.filter((i) => i.section === 'operations');
-  const resItems = visibleItems.filter((i) => i.section === 'resources');
+  const workspaceItems = visibleItems.filter((i) => i.section === 'workspace');
+  const operationItems = visibleItems.filter((i) => i.section === 'operations');
+  const accountItems = visibleItems.filter((i) => i.section === 'account');
 
   const initials = user?.name
     ? user.name
@@ -128,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (
       <div className="space-y-1">
         {groupTitle && (
-          <div className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+          <div className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 select-none">
             {groupTitle}
           </div>
         )}
@@ -138,15 +151,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => handleSelectTab(item.id)}
-              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a73e8] ${
                 isActive
-                  ? 'bg-primary-surface text-primary font-semibold shadow-xs border border-primary-surface-border'
+                  ? 'bg-primary-surface text-[#1a73e8] dark:text-[#8ab4f8] font-semibold shadow-xs border border-primary-surface-border'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
               }`}
             >
               <span
                 className={`transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                  isActive ? 'text-[#1a73e8] dark:text-[#8ab4f8]' : 'text-muted-foreground group-hover:text-foreground'
                 }`}
               >
                 {item.icon}
@@ -171,33 +184,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      {/* Sidebar Container */}
+      {/* Persistent Sidebar Container */}
       <aside
         className={`fixed md:sticky top-0 left-0 z-50 md:z-20 h-screen w-64 bg-card border-r border-border flex flex-col justify-between transition-transform duration-200 ease-in-out md:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Top Section: Brand & Close Button (mobile) */}
+        {/* Top Header Section with Canonical BrandLogo */}
         <div>
           <div className="h-14 px-4 border-b border-border-subtle flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-xs">
-                <span className="text-sm font-bold text-white tracking-wider leading-none">E</span>
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-foreground text-sm tracking-tight leading-tight">
-                    EchoLet
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium bg-muted text-muted-foreground border border-border">
-                    v2.0
-                  </span>
-                </div>
-                <span className="text-[11px] text-muted-foreground leading-none font-medium mt-0.5">
-                  Reliable Outbox Engine
-                </span>
-              </div>
-            </div>
+            <BrandLogo size="md" versionBadge="v2.0" />
 
             <button
               onClick={() => setMobileOpen(false)}
@@ -208,20 +204,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          {/* Navigation Links Scrollable Body */}
+          {/* Navigation Items */}
           <div className="p-3 space-y-4 overflow-y-auto max-h-[calc(100vh-140px)]">
-            {renderNavGroup(mainItems, 'Workspace')}
-            {renderNavGroup(opItems, 'Operations & Reliability')}
-            {renderNavGroup(resItems, 'Documentation')}
+            {renderNavGroup(workspaceItems, isOrganizer ? 'Workspace' : 'Navigation')}
+            {isOrganizer && renderNavGroup(operationItems, 'Operations & Reliability')}
+            {renderNavGroup(accountItems, 'Preferences')}
           </div>
         </div>
 
-        {/* Bottom Section: Authenticated User & Sign Out */}
+        {/* Bottom User Profile Section */}
         <div className="p-3 border-t border-border-subtle bg-muted/20">
           {user ? (
             <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-card border border-border shadow-xs">
               <div className="flex items-center space-x-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center text-xs font-bold shrink-0">
+                <div className="w-8 h-8 rounded-full bg-[#1a73e8]/10 text-[#1a73e8] border border-[#1a73e8]/25 flex items-center justify-center text-xs font-bold shrink-0">
                   {initials}
                 </div>
                 <div className="flex flex-col min-w-0">

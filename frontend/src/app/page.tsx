@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Header } from '../components/Header';
 import { Sidebar, NavigationTab } from '../components/Sidebar';
+import { BrandLogo } from '../components/BrandLogo';
 import { LandingPage } from '../components/LandingPage';
 import { AuthModal } from '../components/AuthModal';
 import { OverviewView } from '../components/views/OverviewView';
@@ -12,6 +13,7 @@ import { RegistrationsView } from '../components/views/RegistrationsView';
 import { OutboxView } from '../components/views/OutboxView';
 import { SimulatorView } from '../components/views/SimulatorView';
 import { ArchitectureView } from '../components/views/ArchitectureView';
+import { SettingsView } from '../components/views/SettingsView';
 import {
   Workshop,
   GlobalRegistrationItem,
@@ -68,7 +70,7 @@ export default function DashboardPage() {
   // Enforce role-based tab access
   useEffect(() => {
     if (user && user.role === 'MEMBER') {
-      if (activeTab === 'outbox' || activeTab === 'simulator') {
+      if (activeTab === 'outbox' || activeTab === 'simulator' || activeTab === 'architecture') {
         setActiveTab('overview');
       }
     }
@@ -161,16 +163,14 @@ export default function DashboardPage() {
     setTriggerCreateWorkshop(true);
   };
 
-  // 1. Loading State: Clean Google-style spinner, never flash private data
+  // 1. Loading State: Clean Google-style spinner with canonical BrandLogo
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-base shadow-sm animate-pulse">
-            E
-          </div>
+        <div className="flex flex-col items-center gap-4">
+          <BrandLogo size="lg" versionBadge="v2.0" />
           <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-            <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="w-3.5 h-3.5 border-2 border-[#1a73e8] border-t-transparent rounded-full animate-spin" />
             <span>Verifying session...</span>
           </div>
         </div>
@@ -306,7 +306,9 @@ export default function DashboardPage() {
             />
           )}
 
-          {activeTab === 'architecture' && <ArchitectureView />}
+          {activeTab === 'architecture' && user.role === 'ORGANIZER' && <ArchitectureView />}
+
+          {activeTab === 'settings' && <SettingsView />}
         </main>
 
         {/* Google-style Clean Compact Footer */}

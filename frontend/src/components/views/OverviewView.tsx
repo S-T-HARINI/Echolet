@@ -25,6 +25,8 @@ import {
   BookOpen,
 } from 'lucide-react';
 
+import { NavigationTab } from '../Sidebar';
+
 interface OverviewViewProps {
   workshops: Workshop[];
   notifications: NotificationOutbox[];
@@ -32,7 +34,7 @@ interface OverviewViewProps {
   summary: NotificationSummary | null;
   simulator: SimulatorStatus | null;
   systemStatus: string;
-  onNavigate: (tab: 'overview' | 'workshops' | 'registrations' | 'outbox' | 'simulator' | 'architecture') => void;
+  onNavigate: (tab: NavigationTab) => void;
   onOpenCreateWorkshop: () => void;
 }
 
@@ -81,13 +83,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <>
               <button
                 onClick={() => onNavigate('outbox')}
-                className="px-3.5 py-2 rounded-md text-xs font-medium border border-border bg-card hover:bg-muted text-foreground transition-colors"
+                className="btn-google-secondary px-3.5 py-2 text-xs font-medium"
               >
                 Outbox Ledger ({totalEvents})
               </button>
               <button
                 onClick={onOpenCreateWorkshop}
-                className="px-4 py-2 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs transition-colors flex items-center space-x-1.5"
+                className="btn-google-primary px-4 py-2 text-xs font-semibold flex items-center space-x-1.5"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>New Workshop</span>
@@ -96,7 +98,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           ) : (
             <button
               onClick={() => onNavigate('workshops')}
-              className="px-4 py-2 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs transition-colors flex items-center space-x-1.5"
+              className="btn-google-primary px-4 py-2 text-xs font-semibold flex items-center space-x-1.5"
             >
               <Calendar className="w-3.5 h-3.5" />
               <span>Browse Workshops</span>
@@ -196,7 +198,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
         ) : (
           <div
-            onClick={() => onNavigate('architecture')}
+            onClick={() => onNavigate('workshops')}
             className="google-card bg-card border border-border rounded-xl p-5 shadow-xs cursor-pointer group"
           >
             <div className="flex items-center justify-between">
@@ -248,14 +250,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
         ) : (
           <div
-            onClick={() => onNavigate('architecture')}
+            onClick={() => onNavigate('settings')}
             className="google-card bg-card border border-border rounded-xl p-5 shadow-xs cursor-pointer group"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Verified Identity
               </span>
-              <div className="w-7 h-7 rounded-md bg-primary-surface flex items-center justify-center text-primary">
+              <div className="w-7 h-7 rounded-md bg-primary-surface flex items-center justify-center text-[#1a73e8]">
                 <Users className="w-4 h-4" />
               </div>
             </div>
@@ -272,17 +274,18 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         )}
       </div>
 
-      {/* Architecture Subsystem Status */}
-      <div className="bg-card border border-border rounded-lg p-5 shadow-xs space-y-3.5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">
-              Architecture Subsystems
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Live status and decoupled process communication.
-            </p>
-          </div>
+      {/* Architecture Subsystem Status (Organizer Diagnostic Panel Only) */}
+      {isOrganizer && (
+        <div className="bg-card border border-border rounded-lg p-5 shadow-xs space-y-3.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                Architecture Subsystems
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Live status and decoupled process communication.
+              </p>
+            </div>
           <span className="text-xs font-medium px-2.5 py-0.5 rounded-full border bg-status-success-bg text-status-success-text border-status-success-border">
             All Systems {systemStatus.toUpperCase()}
           </span>
@@ -362,6 +365,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
         </div>
       </div>
+    )}
 
       {/* Two-Column Snapshot: Recent Activity & Workshop Snapshot */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

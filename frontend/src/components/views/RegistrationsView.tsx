@@ -114,7 +114,7 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
           <button
             onClick={handleOpenRegisterModal}
             disabled={availableWorkshops.length === 0}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="btn-google-primary px-4 py-2 text-sm font-semibold inline-flex items-center space-x-2"
           >
             <UserPlus className="w-4 h-4 stroke-[2.5]" />
             <span>{isOrganizer ? 'Register Attendee' : 'Register for Workshop'}</span>
@@ -306,14 +306,14 @@ export const RegistrationsView: React.FC<RegistrationsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowRegisterModal(false)}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+                  className="btn-google-secondary px-3.5 py-1.5 text-xs font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs disabled:opacity-50 transition-colors"
+                  className="btn-google-primary px-4 py-1.5 text-xs font-medium"
                 >
                   {isSubmitting ? 'Registering...' : 'Confirm Registration'}
                 </button>

@@ -201,7 +201,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
           <div>
             <button
               onClick={openCreateModal}
-              className="inline-flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-xs hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="btn-google-primary px-4 py-2 text-sm font-semibold flex items-center space-x-2"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>New Workshop</span>
@@ -267,7 +267,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
           {workshops.length === 0 && isOrganizer && (
             <button
               onClick={openCreateModal}
-              className="mt-4 inline-flex items-center space-x-1.5 px-4 py-2 rounded-md text-xs font-semibold bg-primary hover:bg-primary-hover text-white shadow-xs hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="mt-4 btn-google-primary inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>Create your first workshop</span>
@@ -367,15 +367,15 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                         setShowRegisterModal(true);
                       }}
                       disabled={isCancelled || isFull}
-                      className="inline-flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-md border border-primary text-primary hover:bg-primary-surface disabled:opacity-40 disabled:cursor-not-allowed disabled:border-border disabled:text-muted-foreground transition-colors"
+                      className="btn-google-primary px-3.5 py-1.5 text-xs font-semibold inline-flex items-center space-x-1.5"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
-                      <span>Register</span>
+                      <span>{isFull ? 'Sold Out' : isCancelled ? 'Cancelled' : 'Register'}</span>
                     </button>
 
                     <button
                       onClick={() => openDetailView(w)}
-                      className="inline-flex items-center space-x-1 text-xs font-medium text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-muted transition-colors"
+                      className="btn-google-secondary px-3 py-1.5 text-xs font-medium inline-flex items-center space-x-1"
                     >
                       <Info className="w-3.5 h-3.5" />
                       <span>Details</span>
@@ -513,7 +513,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setDetailWorkshop(null)}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+                  className="btn-google-secondary px-3.5 py-1.5 text-xs font-medium"
                 >
                   Close
                 </button>
@@ -523,7 +523,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                       setSelectedWorkshop(detailWorkshop);
                       setShowRegisterModal(true);
                     }}
-                    className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs"
+                    className="btn-google-primary px-4 py-1.5 text-xs font-medium"
                   >
                     Register Member
                   </button>
@@ -605,14 +605,14 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+                  className="btn-google-secondary px-3.5 py-1.5 text-xs font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingCreate}
-                  className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs disabled:opacity-50 transition-colors"
+                  className="btn-google-primary px-4 py-1.5 text-xs font-medium"
                 >
                   {isSubmittingCreate ? 'Saving...' : 'Save Workshop'}
                 </button>
@@ -685,14 +685,14 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowRegisterModal(false)}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+                  className="btn-google-secondary px-3.5 py-1.5 text-xs font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingRegister}
-                  className="px-4 py-1.5 rounded-md text-xs font-medium bg-primary hover:bg-primary-hover text-white shadow-xs disabled:opacity-50 transition-colors"
+                  className="btn-google-primary px-4 py-1.5 text-xs font-medium"
                 >
                   {isSubmittingRegister ? 'Registering...' : 'Confirm Registration'}
                 </button>

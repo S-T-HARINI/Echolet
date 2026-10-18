@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { X, Lock, Mail, User as UserIcon, Check, AlertCircle } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -97,9 +98,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
         {/* Header bar */}
         <div className="px-6 pt-6 pb-4 flex items-center justify-between border-b border-[hsl(var(--border-subtle))]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--primary))] flex items-center justify-center text-white font-bold text-sm shadow-sm">
-              E
-            </div>
+            <BrandLogo size="md" />
             <div>
               <h2 className="text-base font-semibold text-[hsl(var(--foreground))]">
                 {mode === 'signin' ? 'Sign in to EchoLet' : 'Create an EchoLet Account'}
@@ -272,7 +271,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full mt-2 py-2.5 px-4 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))] text-white text-xs font-medium rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="btn-google-primary w-full mt-2 py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

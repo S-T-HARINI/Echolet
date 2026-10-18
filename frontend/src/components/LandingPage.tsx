@@ -14,6 +14,7 @@ import {
   Server,
   FileCode,
 } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 interface LandingPageProps {
   onOpenAuth: (mode: 'signin' | 'signup') => void;
@@ -26,9 +27,7 @@ export function LandingPage({ onOpenAuth }: LandingPageProps) {
       <header className="sticky top-0 z-40 bg-[hsl(var(--card))]/90 backdrop-blur-md border-b border-[hsl(var(--border))]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[hsl(var(--primary))] flex items-center justify-center text-white font-bold text-sm shadow-sm">
-              E
-            </div>
+            <BrandLogo size="md" />
             <div className="flex items-center gap-2">
               <span className="text-base font-semibold tracking-tight text-[hsl(var(--foreground))]">
                 EchoLet
@@ -42,13 +41,13 @@ export function LandingPage({ onOpenAuth }: LandingPageProps) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => onOpenAuth('signin')}
-              className="text-xs font-medium px-4 py-2 rounded-lg text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+              className="btn-google-secondary text-xs px-3.5 py-1.5 font-medium"
             >
               Sign In
             </button>
             <button
               onClick={() => onOpenAuth('signup')}
-              className="text-xs font-medium px-4 py-2 rounded-lg bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))] text-white shadow-sm transition-all"
+              className="btn-google-primary text-xs px-3.5 py-1.5 font-semibold"
             >
               Get Started
             </button>
@@ -78,14 +77,14 @@ export function LandingPage({ onOpenAuth }: LandingPageProps) {
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={() => onOpenAuth('signup')}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-hover))] text-white text-xs sm:text-sm font-semibold shadow-md flex items-center justify-center gap-2 transition-all hover:shadow-lg"
+            className="btn-google-primary w-full sm:w-auto px-6 py-2.5 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2"
           >
             <span>Create Your Account</span>
             <ArrowRight className="w-4 h-4" />
           </button>
           <button
             onClick={() => onOpenAuth('signin')}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[hsl(var(--card))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] text-xs sm:text-sm font-medium transition-all"
+            className="btn-google-secondary w-full sm:w-auto px-6 py-2.5 text-xs sm:text-sm font-medium"
           >
             Sign In with Existing Account
           </button>
