@@ -104,7 +104,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedWorkshop) return;
+    if (!selectedWorkshop || isOrganizer) return;
     if (!memberId.trim() || !memberName.trim() || !memberEmail.trim()) {
       showMessage('All member registration fields are required.', true);
       return;
@@ -358,20 +358,22 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                 {/* Card Action Buttons */}
                 <div className="mt-5 pt-3.5 border-t border-border-subtle flex items-center justify-between gap-2">
                   <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedWorkshop(w);
-                        setMemberName(user?.name || '');
-                        setMemberEmail(user?.email || '');
-                        setMemberId(user?.id ? `mem_${user.id.slice(0, 8)}` : `mem_${Math.random().toString(36).substring(2, 7)}`);
-                        setShowRegisterModal(true);
-                      }}
-                      disabled={isCancelled || isFull}
-                      className="btn-google-primary px-3.5 py-1.5 text-xs font-semibold inline-flex items-center space-x-1.5"
-                    >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      <span>{isFull ? 'Sold Out' : isCancelled ? 'Cancelled' : 'Register'}</span>
-                    </button>
+                    {!isOrganizer && (
+                      <button
+                        onClick={() => {
+                          setSelectedWorkshop(w);
+                          setMemberName(user?.name || '');
+                          setMemberEmail(user?.email || '');
+                          setMemberId(user?.id ? `mem_${user.id.slice(0, 8)}` : `mem_${Math.random().toString(36).substring(2, 7)}`);
+                          setShowRegisterModal(true);
+                        }}
+                        disabled={isCancelled || isFull}
+                        className="btn-google-primary px-3.5 py-1.5 text-xs font-semibold inline-flex items-center space-x-1.5"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span>{isFull ? 'Sold Out' : isCancelled ? 'Cancelled' : 'Register'}</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={() => openDetailView(w)}
@@ -517,7 +519,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
                 >
                   Close
                 </button>
-                {detailWorkshop.status !== 'CANCELLED' && detailWorkshop.available_capacity > 0 && (
+                {!isOrganizer && detailWorkshop.status !== 'CANCELLED' && detailWorkshop.available_capacity > 0 && (
                   <button
                     onClick={() => {
                       setSelectedWorkshop(detailWorkshop);
@@ -623,7 +625,7 @@ export const WorkshopsView: React.FC<WorkshopsViewProps> = ({
       )}
 
       {/* Register Member Modal */}
-      {showRegisterModal && selectedWorkshop && (
+      {showRegisterModal && selectedWorkshop && !isOrganizer && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-lg max-w-md w-full p-6 shadow-lg animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-border">

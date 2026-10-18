@@ -6,6 +6,9 @@ import { AuthProvider } from '../context/AuthContext';
 export const metadata: Metadata = {
   title: 'EchoLet — Workshop Registration & Reliable Notification System',
   description: 'Production-grade workshop registration and guaranteed outbox delivery system',
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 const themeScript = `
