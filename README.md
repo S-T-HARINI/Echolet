@@ -1,468 +1,290 @@
-# EchoLet — Production-Quality Workshop Registration & Reliable Notification System
+# EchoLet — Reliable Workshop Registration & Notification Delivery System
 
-[![Tests](https://img.shields.io/badge/tests-24%20passed-emerald)](https://github.com/S-T-HARINI/Echolet)
-[![Architecture](https://img.shields.io/badge/pattern-Transactional%20Outbox-blue)](https://microservices.io/patterns/data/transactional-outbox.html)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-009688)](https://fastapi.tiangolo.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://www.postgresql.org)
-[![License](https://img.shields.io/badge/license-MIT-gray)](LICENSE)
-
-EchoLet is a robust, production-grade implementation of the **GDG Tech Wildcard Entry — Backend Development (Task 2: Workshop Registration and Notifications)**. It guarantees durable, reliable notification delivery by eliminating the classic distributed dual-write failure mode through the **Transactional Outbox Pattern**, concurrency-safe worker leases, and receiver-side idempotency deduplication.
+EchoLet is a production-grade workshop management and notification delivery platform designed to eliminate the distributed **dual-write problem**. When a member registers for a workshop or an organizer cancels an event, business state changes and external notifications must occur reliably. By implementing the **Transactional Outbox Pattern**, EchoLet decouples synchronous user requests from asynchronous network communication, guaranteeing that every persisted registration produces a notification without lost messages, double registrations, or ghost confirmations.
 
 ---
 
-## Table of Contents
-1. [Problem Statement & The Dual-Write Hazard](#1-problem-statement--the-dual-write-hazard)
-2. [Architecture Overview & Component Responsibilities](#2-architecture-overview--component-responsibilities)
-3. [Technology Stack Rationale](#3-technology-stack-rationale)
-4. [Database Schema & Transaction Boundaries](#4-database-schema--transaction-boundaries)
-5. [Transactional Outbox Workflow](#5-transactional-outbox-workflow)
-6. [Worker Job Claiming, Retries, and Recovery](#6-worker-job-claiming-retries-and-recovery)
-7. [Idempotency & Ambiguous Delivery Outcomes](#7-idempotency--ambiguous-delivery-outcomes)
-8. [Workshop Cancellation Fan-Out](#8-workshop-cancellation-fan-out)
-9. [Standalone Mock HTTP Notification Service](#9-standalone-mock-http-notification-service)
-10. [Local Development & Docker Deployment](#10-local-development--docker-deployment)
-11. [API Reference & Example Curl Commands](#11-api-reference--example-curl-commands)
-12. [Step-by-Step Demonstration Workflows](#12-step-by-step-demonstration-workflows)
-13. [Automated Testing Suite](#13-automated-testing-suite)
-14. [Engineering Trade-offs & Known Limitations](#14-engineering-trade-offs--known-limitations)
+## 1. Project Overview & Architecture
 
----
+### System Components
 
-## 1. Problem Statement & The Dual-Write Hazard
-
-In workshop registration systems, a user registration requires two logical outcomes:
-1. Persisting the registration in a relational database.
-2. Sending a confirmation notification (e.g., via email, SMS, or an external webhook).
-
-### The Flawed "Direct HTTP" Pattern
-```mermaid
-sequenceDiagram
-    participant User
-    participant API
-    participant Database
-    participant NotificationService as External HTTP Service
-
-    User->>API: POST /workshops/{id}/registrations
-    API->>Database: BEGIN & INSERT Registration
-    API->>NotificationService: POST /notify (Direct HTTP call)
-    Note over API,NotificationService: Network latency blocks user thread!
-    alt HTTP call times out or crashes
-        API->>Database: ROLLBACK
-        Note over API,User: User gets 500 error, but notification may have already been dispatched!
-    else DB crashes after HTTP 200
-        Note over API,Database: Notification sent, but registration was lost! Ghost confirmation.
-    end
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Next.js Frontend (:3000)                        │
+│   (Member Catalog, Organizer Console, Outbox Monitor, Simulator UI)    │
+└───────────────────┬────────────────────────────────┬───────────────────┘
+                    │                                │
+                    ▼                                ▼
+┌──────────────────────────────────────┐  ┌──────────────────────────────┐
+│        FastAPI Backend (:8000)       │  │ Mock Notification Svc (:8001)│
+│  - Workshop & Member APIs            │  │  - Durable Delivery Storage  │
+│  - Atomic Registration Transaction   │  │  - Fault Simulator (500/lag)│
+│  - Outbox Event Generation           │  │  - Idempotency Deduplication │
+└───────────────────┬──────────────────┘  └──────────────▲───────────────┘
+                    │                                    │
+                    │  Atomic Write                      │  HTTP POST (3s timeout)
+                    ▼                                    │  Idempotency Key
+┌──────────────────────────────────────┐                 │
+│         Relational Database          │                 │
+│  - workshops & registrations         │                 │
+│  - notification_outbox (status, lock)│                 │
+└───────────────────▲──────────────────┘                 │
+                    │                                    │
+                    │  Poll & Claim (Lease Locks)        │
+┌───────────────────┴────────────────────────────────────┴───────────────┐
+│                     Transactional Outbox Worker                        │
+│   - Background Daemon, Exponential Backoff + Jitter, Auto-Recovery     │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-### The EchoLet Transactional Outbox Solution
-EchoLet decomposes registration and delivery into two decoupled, resilient phases:
-1. **Phase 1 (Synchronous & Atomic)**: The registration and a pending notification event are committed within the **exact same database transaction**. The API returns HTTP 201 immediately without making external network calls.
-2. **Phase 2 (Asynchronous & Fault-Tolerant)**: An independent notification worker continuously claims pending outbox events using PostgreSQL concurrency-safe leases (`FOR UPDATE SKIP LOCKED`), dispatches them over HTTP with bounded timeouts, handles retries with exponential backoff and jitter, and updates delivery state.
+- **Backend API (`backend/`)**: FastAPI application providing authenticated REST endpoints for workshop management, atomic registration with capacity checks, and cancellation fan-out.
+- **Transactional Outbox Worker (`backend/app/worker/`)**: Independent Python daemon that polls the outbox, claims jobs via concurrency-safe leases, delivers notifications with bounded HTTP timeouts, and schedules retries.
+- **Mock Notification Service (`mock_service/`)**: Standalone FastAPI service with persistent storage simulating external email/webhook delivery, equipped with runtime failure simulation (500 errors, latency delays, timeouts) and receiver-side idempotency deduplication.
+- **Frontend Dashboard (`frontend/`)**: Modern Next.js 14 web application featuring a Member Catalog, Organizer Management Console, Failure Simulator controls, and a Live Outbox Inspection Monitor.
 
 ---
 
-## 2. Architecture Overview & Component Responsibilities
+## 2. Source Code Structure
 
-```mermaid
-flowchart TD
-    Client["Client / Next.js Dashboard"]
-    API["FastAPI Backend Service (:8000)"]
-    DB[("PostgreSQL Database (:5432)")]
-    Worker["Outbox Worker Daemon"]
-    MockService["Mock HTTP Notification Service (:8001)"]
-
-    Client -->|"POST /api/v1/workshops/{id}/registrations"| API
-    Client -->|"POST /api/v1/workshops/{id}/cancel"| API
-
-    subgraph Atomic_Tx ["Atomic Relational Transaction"]
-        API -->|"1. Persist Registration"| DB
-        API -->|"2. Persist NotificationOutbox (PENDING)"| DB
-    end
-
-    API -->|"201 Created (Instant)"| Client
-
-    Worker -->|"Poll & Claim (FOR UPDATE SKIP LOCKED)"| DB
-    Worker -->|"POST /api/v1/notify (Bounded 3s Timeout)"| MockService
-    MockService -->|"200 OK / 5xx / Timeout"| Worker
-
-    alt Success (200 OK with 'delivered')
-        Worker -->|"status = DELIVERED, delivered_at = NOW"| DB
-    else Transient HTTP Error or Timeout
-        Worker -->|"status = RETRYING, Backoff + Jitter"| DB
-    end
+```
+Echolet/
+├── backend/
+│   └── app/
+│       ├── api/
+│       │   └── v1/
+│       │       ├── auth.py              # JWT authentication & session routes
+│       │       ├── health.py            # System health & worker status checks
+│       │       ├── notifications.py     # Outbox inspection & delivery queries
+│       │       ├── registrations.py     # Registration endpoints
+│       │       └── workshops.py         # Workshop creation, listing, cancellation
+│       ├── auth/                        # Password hashing and token utilities
+│       ├── models/
+│       │   ├── outbox.py                # NotificationOutbox database model
+│       │   ├── registration.py          # Registration database model
+│       │   ├── user.py                  # User and authentication models
+│       │   └── workshop.py              # Workshop database model
+│       ├── schemas/                     # Pydantic request/response validation
+│       ├── services/
+│       │   ├── auth_service.py          # Authentication business logic
+│       │   ├── registration_service.py  # Atomic registration & outbox write
+│       │   └── workshop_service.py      # Workshop management & cancellation fan-out
+│       ├── worker/
+│       │   ├── outbox_worker.py         # Outbox claim, HTTP delivery & retry logic
+│       │   └── runner.py                # Standalone worker daemon entry point
+│       ├── config.py                    # Environment and application configuration
+│       ├── database.py                  # Async SQLAlchemy engine & session factory
+│       └── main.py                      # FastAPI application entry point
+├── mock_service/
+│   └── app/
+│       ├── config.py                    # Mock service configuration
+│       ├── database.py                  # SQLite database for recorded deliveries
+│       ├── main.py                      # Delivery endpoint & simulator REST API
+│       ├── schemas.py                   # Delivery & simulation schemas
+│       └── simulator.py                 # In-memory failure simulation engine
+├── frontend/
+│   ├── src/
+│   │   ├── app/                         # Next.js App Router & main layout
+│   │   ├── components/
+│   │   │   ├── views/                   # Catalog, Organizer, Outbox, Simulator views
+│   │   │   └── ui/                      # Badges, buttons, modals, input elements
+│   │   └── lib/                         # API client and authentication hooks
+│   ├── package.json                     # Node.js dependencies & scripts
+│   └── next.config.js                   # Next.js configuration & API rewrites
+├── tests/                               # Comprehensive automated test suite
+│   ├── test_atomicity.py                # ACID transactional boundary tests
+│   ├── test_concurrency.py              # Concurrent registration & capacity limits
+│   ├── test_idempotency.py              # Receiver and sender deduplication tests
+│   ├── test_outbox_worker.py            # Polling, claiming, and lease management
+│   ├── test_restart_recovery.py         # Persistence across backend restarts
+│   └── test_retry_backoff.py            # Exponential backoff & jitter verification
+├── alembic/                             # Database migrations
+├── requirements.txt                     # Python dependencies
+└── README.md                            # Documentation and run instructions
 ```
 
-### Component Roles:
-- **`backend` (FastAPI)**: Validates input schemas, enforces workshop capacities and duplicate constraints atomically, persists registrations and outbox events, and exposes inspection endpoints.
-- **`worker` (Python Daemon)**: Concurrency-safe outbox processor. Claims jobs with lease timeouts, executes bounded HTTP requests, and safely recovers crashed worker claims.
-- **`mock_service` (FastAPI Service)**: Standalone HTTP recipient with its own persistent SQLite database for deliveries, deterministic failure controls (500 errors, timeouts, flaky mode), and receiver-side idempotency deduplication.
-- **`frontend` (Next.js & Tailwind CSS)**: Engineering dashboard adhering to a monochrome, Linear/Raycast/Vercel design system with light/dark/system mode and brightness adjustments.
+---
+
+## 3. Run Instructions
+
+### Prerequisites
+- **Python**: 3.10, 3.11, 3.12, or 3.13
+- **Node.js**: v18 or v20+ with `npm`
 
 ---
 
-## 3. Technology Stack Rationale
+### Step 1: Install Dependencies
 
-| Component | Selected Technology | Technical Justification |
-| :--- | :--- | :--- |
-| **Language** | Python 3.12 / 3.13 | Native async/await, broad ecosystem, high developer productivity. |
-| **Web Framework** | FastAPI | High throughput async ASGI, automatic OpenAPI generation, Pydantic validation. |
-| **Validation** | Pydantic v2 | High-performance C-extension validation, strict typing, ISO-8601 UTC enforcement. |
-| **ORM / Query Engine** | SQLAlchemy 2.0 (Async) | Async session management, cross-database support (PostgreSQL & SQLite for tests). |
-| **Persistence** | PostgreSQL 16 | Durable ACID transactions, row-level locking (`FOR UPDATE SKIP LOCKED`). |
-| **Migrations** | Alembic | Tracked, reproducible schema evolution without automatic table hacks. |
-| **HTTP Client** | HTTPX | Asynchronous HTTP client with bounded timeouts and connection pooling. |
-| **Testing** | Pytest & pytest-asyncio | 24 automated unit, concurrency, idempotency, and failure-recovery tests. |
-| **Frontend** | Next.js 14, React, Tailwind | Minimalist monochrome engineering dashboard with live status inspection. |
-
----
-
-## 4. Database Schema & Transaction Boundaries
-
-### Relational Schema Diagram
-```mermaid
-erDiagram
-    WORKSHOPS ||--o{ REGISTRATIONS : has
-    WORKSHOPS ||--o{ NOTIFICATION_OUTBOX : queues
-    
-    WORKSHOPS {
-        string id PK
-        string title
-        text description
-        datetime schedule
-        int capacity
-        int current_registrations
-        string status
-        datetime cancelled_at
-        datetime created_at
-        datetime updated_at
-    }
-
-    REGISTRATIONS {
-        string id PK
-        string workshop_id FK
-        string member_id
-        string member_name
-        string member_email
-        string status
-        datetime registered_at
-        datetime created_at
-        datetime updated_at
-    }
-
-    NOTIFICATION_OUTBOX {
-        string id PK
-        string workshop_id FK
-        string recipient_email
-        string recipient_name
-        string event_type
-        json payload
-        string idempotency_key UK
-        string status
-        int attempt_count
-        text last_error
-        datetime next_retry_at
-        string claimed_by
-        datetime claim_expires_at
-        datetime delivered_at
-        datetime created_at
-        datetime updated_at
-    }
-
-    MOCK_DELIVERIES {
-        string id PK
-        string idempotency_key UK
-        string recipient_email
-        string recipient_name
-        string event_type
-        json payload
-        int attempt_seen_count
-        datetime delivered_at
-    }
-```
-
-### Critical Database Constraints & Indexes:
-1. **Unique Registration Constraint**: `uq_registrations_workshop_member (workshop_id, member_id)` prevents double registration at the database level.
-2. **Deterministic Outbox Idempotency Key**: `uq_notification_outbox_idempotency_key (idempotency_key)` ensures duplicate logical events cannot be inserted.
-3. **Optimized Worker Polling Index**: `ix_outbox_polling (status, next_retry_at)` allows instant sub-millisecond retrieval of pending and retryable jobs.
-4. **Crash Recovery Lease Index**: `ix_outbox_lease_expiry (status, claim_expires_at)` enables rapid claiming of abandoned jobs.
-
----
-
-## 5. Transactional Outbox Workflow
-
-### Atomic Registration Algorithm:
-1. `SELECT 1 FROM registrations WHERE workshop_id = :id AND member_id = :member_id` verifies applicant has not registered.
-2. **Atomic Capacity Reservation**:
-   ```sql
-   UPDATE workshops
-   SET current_registrations = current_registrations + 1
-   WHERE id = :id AND status = 'SCHEDULED' AND current_registrations < capacity;
-   ```
-   If updated rows == 0, registration is rejected with 409 (Capacity reached or workshop cancelled).
-3. Insert `Registration` record (`status = 'CONFIRMED'`).
-4. Insert `NotificationOutbox` record with `idempotency_key = f"reg_{registration.id}"` and `status = 'PENDING'`.
-5. **COMMIT** the transaction.
-6. Return HTTP 201 Created to client.
-
----
-
-## 6. Worker Job Claiming, Retries, and Recovery
-
-### Concurrency-Safe Claiming with Leases
-Multiple worker instances can run concurrently across containers:
-```sql
-SELECT * FROM notification_outbox
-WHERE (status IN ('PENDING', 'RETRYING') AND next_retry_at <= :now)
-   OR (status = 'CLAIMED' AND claim_expires_at <= :now)
-ORDER BY next_retry_at ASC
-LIMIT :batch_size
-FOR UPDATE SKIP LOCKED;
-```
-Once rows are selected, the worker sets `status = 'CLAIMED'`, `claimed_by = :worker_id`, and `claim_expires_at = :now + 30s`, and **commits immediately**.
-> [!IMPORTANT]
-> The database connection is released before the worker initiates the external HTTP call. No database connection is ever held open during network calls!
-
-### Exponential Backoff with Jitter
-When a transient HTTP error (500, 502, 503, 504) or timeout occurs:
-$$ \text{delay} = \min(\text{max\_delay}, \text{base\_delay} \times 2^{\text{attempt\_count} - 1}) \times \text{Uniform}(0.5, 1.0) $$
-- **Base delay**: 2.0s
-- **Max delay**: 300.0s (5 minutes)
-- Notifications are **never silently discarded**; transient failures continue retrying with capped delay.
-- Each item is processed independently; one failing recipient does not block other recipients.
-
-### Zombie Worker Crash Recovery
-If a worker crashes mid-delivery:
-- The item remains in state `CLAIMED`.
-- After 30 seconds, `claim_expires_at <= NOW()` becomes true.
-- Any active worker automatically reclaims the expired lease on the next polling cycle.
-
----
-
-## 7. Idempotency & Ambiguous Delivery Outcomes
-
-### The Ambiguous Timeout Problem
-If the worker sends an HTTP request, the mock service records the delivery, but the network connection drops before the 200 OK response reaches the worker:
-1. The worker records a timeout and marks the event `RETRYING`.
-2. When the retry executes, the worker re-sends the request with the **exact same `idempotency_key`** (`reg_UUID`).
-3. The Mock Notification Service checks its durable `mock_deliveries` table:
-   ```sql
-   SELECT * FROM mock_deliveries WHERE idempotency_key = :key;
-   ```
-4. If found, it increments `attempt_seen_count` and returns:
-   ```json
-   {
-     "status": "delivered",
-     "idempotent_replay": true,
-     "delivery_id": "...",
-     "message": "Notification already delivered previously (idempotent deduplication)."
-   }
-   ```
-5. The worker updates its outbox record to `DELIVERED`.
-6. **Result**: Exactly one logical delivery record is stored in durable receiver storage.
-
----
-
-## 8. Workshop Cancellation Fan-Out
-
-When an organizer cancels a workshop (`POST /api/v1/workshops/{id}/cancel`):
-1. The workshop row is locked. If already `CANCELLED`, the endpoint returns HTTP 200 with `notifications_queued: 0` (Idempotent).
-2. Workshop status is updated to `CANCELLED` and `cancelled_at` is set.
-3. All confirmed registrations for that workshop are fetched.
-4. For each registration, a cancellation outbox event is created with deterministic idempotency key `cancel_{workshop_id}_{reg_id}`.
-5. All operations commit within the same atomic transaction.
-6. Subsequent registration attempts are rejected with HTTP 400.
-
----
-
-## 9. Standalone Mock HTTP Notification Service
-
-The Mock Service (`mock_service`) runs as an independent HTTP server on port 8001:
-- `POST /api/v1/notify`: Accepts notification dispatch. Validates payload, evaluates failure injection rules, checks receiver idempotency, and records delivery.
-- `GET /api/v1/deliveries`: Inspects recorded deliveries.
-- `POST /api/v1/simulate/configure`: Configures simulation modes (`normal`, `fail_500`, `timeout`, `flaky`, `fail_recipients`).
-- `POST /api/v1/simulate/reset`: Resets simulator to normal mode.
-- `GET /api/v1/simulate/status`: Returns current failure configuration and statistics.
-
----
-
-## 10. Local Development & Docker Deployment
-
-### Option A: Docker Compose (Recommended)
-Starts PostgreSQL, Mock Service, Backend API, Worker Daemon, and Next.js Frontend:
+#### Python Backend & Mock Service
+From the root directory of the project:
 ```bash
-docker-compose up --build
-```
-- Backend API: `http://localhost:8000`
-- API Documentation: `http://localhost:8000/docs`
-- Mock Service: `http://localhost:8001`
-- Frontend Dashboard: `http://localhost:3000`
-
-### Option B: Local Development (Without Docker)
-
-#### 1. Setup Python Virtual Environment:
-```bash
+# Create and activate a virtual environment
 python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# Linux/macOS:
+
+# On Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# On Linux / macOS:
 source .venv/bin/activate
 
+# Install required Python packages
 pip install -r requirements.txt
 ```
 
-#### 2. Run Database Migrations:
-```bash
-alembic upgrade head
-```
-
-#### 3. Start Mock Notification Service (Terminal 1):
-```bash
-python -m uvicorn mock_service.app.main:app --port 8001 --reload
-```
-
-#### 4. Start EchoLet Backend API (Terminal 2):
-```bash
-python -m uvicorn backend.app.main:app --port 8000 --reload
-```
-
-#### 5. Start Outbox Notification Worker (Terminal 3):
-```bash
-python -m backend.app.worker.runner
-```
-
-#### 6. Start Next.js Frontend Dashboard (Terminal 4):
+#### Frontend
+From the `frontend/` directory:
 ```bash
 cd frontend
 npm install
+cd ..
+```
+
+---
+
+### Step 2: Start the Services
+
+To run the complete EchoLet system, launch the four components in separate terminal windows:
+
+#### Terminal 1 — Backend API
+```bash
+# Windows / Linux / macOS (with virtualenv active)
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+- **Service URL**: `http://127.0.0.1:8000`
+- **Interactive Swagger Docs**: `http://127.0.0.1:8000/docs`
+- **Health Check**: `http://127.0.0.1:8000/api/v1/health`
+
+#### Terminal 2 — Mock Notification Service
+```bash
+python -m uvicorn mock_service.app.main:app --host 127.0.0.1 --port 8001
+```
+- **Service URL**: `http://127.0.0.1:8001`
+- **Health Check**: `http://127.0.0.1:8001/api/v1/health`
+- **Deliveries API**: `http://127.0.0.1:8001/api/v1/deliveries`
+
+#### Terminal 3 — Transactional Outbox Worker
+```bash
+python -m backend.app.worker.runner
+```
+- Continuously polls the outbox table and executes reliable notification dispatches.
+
+#### Terminal 4 — Frontend Web Dashboard
+```bash
+cd frontend
 npm run dev
 ```
+- **Dashboard URL**: `http://localhost:3000`
 
 ---
 
-## 11. API Reference & Example Curl Commands
+### Step 3: Run the Automated Test Suite
 
-### Workshop Management
+EchoLet includes automated test suites verifying atomicity, concurrency, idempotency, retries, and worker behavior:
+
 ```bash
-# 1. Create a Workshop
-curl -X POST http://localhost:8000/api/v1/workshops \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Cloud-Native Architecture",
-    "description": "Mastering outbox patterns and distributed data consistency",
-    "schedule": "2026-11-20T14:00:00Z",
-    "capacity": 25
-  }'
-
-# 2. List Workshops
-curl -X GET http://localhost:8000/api/v1/workshops
-
-# 3. Get Workshop Details
-curl -X GET http://localhost:8000/api/v1/workshops/<WORKSHOP_ID>
-```
-
-### Member Registration
-```bash
-# 4. Register a Member (Returns immediately with notification_status: PENDING)
-curl -X POST http://localhost:8000/api/v1/workshops/<WORKSHOP_ID>/registrations \
-  -H "Content-Type: application/json" \
-  -d '{
-    "member_id": "mem-101",
-    "member_name": "Alice Smith",
-    "member_email": "alice@example.com"
-  }'
-
-# 5. List Registrations for Workshop
-curl -X GET http://localhost:8000/api/v1/workshops/<WORKSHOP_ID>/registrations
-```
-
-### Workshop Cancellation Fan-Out
-```bash
-# 6. Cancel Workshop (Queues cancellation notifications for all registered members)
-curl -X POST http://localhost:8000/api/v1/workshops/<WORKSHOP_ID>/cancel
-```
-
-### Outbox & Health Inspection
-```bash
-# 7. Outbox Summary
-curl -X GET http://localhost:8000/api/v1/notifications/summary
-
-# 8. List Outbox Notifications (Filter by status, workshop, or recipient)
-curl -X GET "http://localhost:8000/api/v1/notifications?status=DELIVERED"
-
-# 9. Get Single Notification Details
-curl -X GET http://localhost:8000/api/v1/notifications/<NOTIFICATION_ID>
-
-# 10. System Health Check
-curl -X GET http://localhost:8000/api/v1/health
+# Run all tests with verbose output
+pytest -v
 ```
 
 ---
 
-## 12. Step-by-Step Demonstration Workflows
+## 4. Reliability Architecture: Design & Guarantees
 
-### Demo 1: Successful Registration & Async Delivery
-1. Create a workshop with capacity = 10.
-2. Register member `alice@example.com`.
-3. Observe API response returns HTTP 201 with `notification_status: "PENDING"` immediately.
-4. Worker claims event, dispatches to Mock Service.
-5. Check `GET /api/v1/notifications/<id>`: status changes to `DELIVERED` with `delivered_at` timestamp.
+### 4.1 Handling Lost Notifications (Eliminating the Dual-Write Hazard)
 
-### Demo 2: Simulating Failure & Recovery
-1. Configure Mock Service to fail with HTTP 500:
-   ```bash
-   curl -X POST http://localhost:8001/api/v1/simulate/configure \
-     -H "Content-Type: application/json" \
-     -d '{"mode": "fail_500"}'
+#### The Problem
+In standard web architectures, sending a notification immediately following a database write creates an unavoidable failure mode:
+1. If the database commit succeeds but the HTTP call to the notification provider fails, times out, or crashes, the notification is permanently lost.
+2. If the HTTP call succeeds but the local transaction fails to commit, the user receives a "ghost" confirmation for an action that never took place.
+
+#### The Solution: Atomic Transactional Outbox
+EchoLet completely decouples synchronous user requests from network delivery:
+1. **Single ACID Transaction**: In [`registration_service.py`](backend/app/services/registration_service.py), the registration record and the corresponding `NotificationOutbox` event are persisted within the **exact same database transaction**:
+   ```python
+   async with session.begin():
+       # 1. Atomic capacity check and reservation
+       # 2. Persist Registration entity
+       # 3. Persist NotificationOutbox event with status='PENDING'
    ```
-2. Register member `bob@example.com`.
-3. Check outbox: status is `RETRYING`, `attempt_count: 1`, `last_error: "HTTP 500: ..."` with `next_retry_at` scheduled.
-4. Reset Mock Service to normal:
-   ```bash
-   curl -X POST http://localhost:8001/api/v1/simulate/reset
-   ```
-5. When `next_retry_at` arrives, worker dispatches again. Status transitions to `DELIVERED`.
-
-### Demo 3: Simulating Recipient Isolation
-1. Add `unlucky@example.com` to Mock Service targeted failure list.
-2. Register `unlucky@example.com` and `lucky@example.com`.
-3. Observe: `lucky@example.com` delivers successfully (`DELIVERED`), while `unlucky@example.com` enters exponential backoff (`RETRYING`). **Neither recipient blocks the other.**
-
-### Demo 4: Workshop Cancellation Fan-Out
-1. Create workshop and register 3 members.
-2. Cancel workshop: `POST /api/v1/workshops/<id>/cancel`.
-3. Response reports `notifications_queued: 3`.
-4. Outbox inspector shows 3 distinct cancellation events dispatched to all 3 members.
-5. Attempting new registration returns HTTP 400 (Workshop cancelled).
+2. **All-or-Nothing Guarantee**:
+   - If capacity is exceeded or validation fails, the entire transaction rolls back. No registration is saved, and **no notification event is created**.
+   - If the transaction commits, both the registration and the notification event are guaranteed to be durable on disk.
+3. **Asynchronous Dispatch**: The API returns HTTP 201 immediately without making external network calls. The background Outbox Worker is responsible for picking up the durable outbox event and delivering it over HTTP.
 
 ---
 
-## 13. Automated Testing Suite
+### 4.2 Handling Retries (Exponential Backoff, Jitter & Leases)
 
-The project includes 24 tests verifying every reliability and fault-recovery scenario.
+#### Non-Blocking Asynchronous Processing
+When external delivery fails, the user is never blocked or exposed to 500 errors because delivery happens asynchronously in the worker background loop.
 
-### Running Tests:
-```bash
-# Run full test suite
-pytest -v tests
+#### Exponential Backoff with Jitter
+When an HTTP delivery attempt encounters a network issue, timeout, or HTTP 5xx error:
+1. The worker increments `attempt_count` and updates event status to `RETRYING`.
+2. The `next_retry_at` timestamp is calculated using exponential backoff with full jitter:
+   $$\text{delay} = \min\left(\text{max\_delay},\; \text{base\_delay} \times 2^{\text{attempt} - 1}\right) \times (1 \pm \text{jitter})$$
+   - Default configuration: `base_delay = 2.0s`, `max_delay = 300.0s`, `jitter = ±10%`.
+   - Jitter prevents the "thundering herd" problem by spreading retries across staggered intervals.
+3. The event remains untouched in the outbox until `next_retry_at <= NOW()`.
 
-# Run tests with code coverage report
-pytest --cov=backend.app --cov=mock_service.app tests
-```
+#### Concurrency-Safe Worker Leases
+To coordinate multiple worker instances without double processing:
+1. The worker claims events by atomically setting `claimed_by = :worker_id` and `claim_expires_at = NOW() + lease_duration` (default 30 seconds).
+2. Other workers skip locked/claimed rows.
+3. If a worker process crashes mid-delivery, its lease expires automatically, and another healthy worker will safely reclaim the orphaned event.
 
-### Test Coverage Highlights:
-- **`test_api_validation.py`**: Validates past dates, capacity bounds, empty titles, and RFC email format.
-- **`test_registration_and_outbox.py`**: Verifies transactional atomicity, outbox generation, and duplicate rejection.
-- **`test_concurrency_and_capacity.py`**: Verifies capacity enforcement under concurrent bursts.
-- **`test_cancellation_fanout.py`**: Verifies transactional fan-out, cancellation rejection, and repeated cancellation idempotency.
-- **`test_mock_notification_service.py`**: Verifies receiver idempotency deduplication, simulated HTTP 500, timeouts, and targeted failure.
-- **`test_worker_reliability_and_retry.py`**: Verifies lease claiming, backoff calculation, expired claim recovery, and recipient isolation.
-- **`test_failure_recovery.py`**: Verifies end-to-end failure, exponential retry, and recovery across process cycles.
-- **`test_endpoints_and_health.py`**: Verifies health checks, summary counters, and query filters.
+#### Dead-Letter / Maximum Retries
+If an event reaches the configured maximum retry threshold (default 10 attempts), it transitions to `FAILED` status and logs the last error payload for inspection, ensuring failed messages are never lost or silently discarded.
 
 ---
 
-## 14. Engineering Trade-offs & Known Limitations
+### 4.3 Handling Duplicate Delivery (Idempotency Keys & Deduplication)
 
-1. **At-Least-Once Delivery**: Due to the CAP theorem and the two-generals problem over HTTP, exactly-once delivery across network boundaries is impossible without receiver-side deduplication. EchoLet pairs at-least-once outbox delivery with receiver-side idempotency keys.
-2. **Polling vs. PostgreSQL LISTEN/NOTIFY**: EchoLet uses indexed polling with `FOR UPDATE SKIP LOCKED`. While `LISTEN/NOTIFY` reduces polling latency, polling with leases is universally durable across worker restarts, network partitions, and container scaling.
-3. **Continuous Retries vs. Dead-Letter Queues**: To prevent silent notification loss, EchoLet continues retrying transient errors with a capped exponential backoff (up to 300 seconds) rather than discarding notifications after a hard limit.
+#### The Problem: Ambiguous Network Failures
+Over unreliable networks, "at-least-once" delivery can result in duplicate delivery attempts. For example, if the notification service receives a notification and persists it, but the network drops before returning the HTTP 200 response, the sender assumes failure and retries.
+
+#### Sender-Side Deterministic Idempotency Keys
+Every outbox event is generated with a deterministic, globally unique idempotency key:
+- **Registration Confirmation**: `reg_{registration_id}`
+- **Cancellation Notice**: `cancel_{workshop_id}_{member_id}`
+
+A unique database constraint on `notification_outbox.idempotency_key` guarantees that the system cannot queue duplicate events for the same business action.
+
+#### Receiver-Side Deduplication Storage
+When the Outbox Worker calls the Mock Notification Service (`POST /api/v1/notify`), it includes `idempotency_key` in the payload:
+1. The Mock Service checks its persistent `mock_deliveries` table for the incoming key.
+2. **First Attempt**: The record is inserted into `mock_deliveries`, simulated failure conditions (if any) are applied, and HTTP 200 (`status: "delivered"`) is returned.
+3. **Replay / Duplicate Attempt**: The service detects an existing record with the matching `idempotency_key`. It increments `attempt_seen_count`, sets `idempotent_replay: true`, and returns HTTP 200 immediately without duplicate side-effects.
+4. The worker receives the 200 OK and marks the outbox event as `DELIVERED`.
+
+---
+
+### 4.4 Handling Backend Restarts (Crash Durability & Self-Healing)
+
+#### Decoupled Architecture
+The FastAPI API process, Mock Notification Service, and Outbox Worker are strictly separated:
+- The API process does not hold in-memory notification queues.
+- The Outbox Worker interacts only with the persistent relational database.
+
+#### Crash Resilience
+- If the Backend API process is restarted immediately after committing a registration, the registration and its `PENDING` outbox entry remain safely persisted in the relational database.
+- When the worker polls the database, it queries:
+  ```sql
+  WHERE (status = 'PENDING' OR status = 'RETRYING')
+    AND next_retry_at <= NOW()
+    AND (claim_expires_at IS NULL OR claim_expires_at < NOW())
+  ```
+- Any unhandled or in-flight events that survived the restart are immediately discovered and dispatched.
+- Even if the host machine experiences a sudden restart, all database records remain intact, and normal notification processing resumes as soon as the worker process starts.
+
+---
+
+## 5. Failure Simulator & Testing Controls
+
+The project includes an interactive Failure Simulator accessible via the frontend dashboard or REST API (`http://127.0.0.1:8001/api/v1/simulate`):
+
+| Simulation Mode | Description |
+| :--- | :--- |
+| **Normal Operation** | Clean delivery with 0ms injected delay and HTTP 200 responses. |
+| **Simulated 500 Errors** | Injects HTTP 500 Internal Server Errors to test worker exponential backoff and retries. |
+| **Simulated Latency / Timeouts** | Injects delays (e.g., 5 seconds) exceeding the worker HTTP timeout (3 seconds) to test timeout recovery. |
+| **Flaky Delivery** | Introduces a configurable failure probability (e.g., 50%) to verify dynamic retry convergence. |
+| **Targeted Recipient Faults** | Causes failures only for designated email addresses, allowing multi-user concurrency testing. |
